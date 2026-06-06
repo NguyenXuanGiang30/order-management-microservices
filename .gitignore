@@ -1,0 +1,43 @@
+# Build output
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Frontend
+node_modules/
+dist/
+dist-ssr/
+
+# Auto-generated
+auto-imports.d.ts
+components.d.ts
+
+# Logs
+*.log
+logs/
+.dev-logs/
+vite-dev.*.log
+
+# User/editor files
+.vs/
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.user
+*.suo
+*.sw?
+*.ntvs*
+*.njsproj
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local environment/secrets
+.env
+*.local
+
+# Lock files (regenerate with npm install)
+package-lock.json
+pnpm-lock.yaml

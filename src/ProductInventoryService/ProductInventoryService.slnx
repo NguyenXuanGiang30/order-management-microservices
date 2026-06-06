@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="ProductInventoryService.API/ProductInventoryService.API.csproj" />
+  <Project Path="ProductInventoryService.Application/ProductInventoryService.Application.csproj" />
+  <Project Path="ProductInventoryService.Infrastructure/ProductInventoryService.Infrastructure.csproj" />
+  <Project Path="ProductInventoryService.Tests/ProductInventoryService.Tests.csproj" />
+</Solution>

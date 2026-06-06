@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+Frontend/node_modules/
+Frontend/dist/
+Frontend/.vite/
+**/*.user
+**/*.suo
+**/*.log
