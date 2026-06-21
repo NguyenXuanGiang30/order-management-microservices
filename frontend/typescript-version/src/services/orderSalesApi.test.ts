@@ -14,7 +14,8 @@ import {
 
 describe('order sales API', () => {
   it('loads paged orders with filters', async () => {
-    const calls: Array<{ path: string, query?: Record<string, unknown> }> = []
+    const calls: Array<{ path: string; query?: Record<string, unknown> }> = []
+
     const client = {
       get: async <T>(path: string, options?: { query?: Record<string, unknown> }) => {
         calls.push({ path, query: options?.query })
@@ -38,7 +39,7 @@ describe('order sales API', () => {
               finalAmount: 200000,
               paidAmount: 200000,
               debtAmount: 0,
-              paymentMethod: 'cash',
+              paymentMethod: 'Tiền mặt',
               status: 'Paid',
               note: null,
               createdAt: '2026-06-01T09:30:00Z',
@@ -68,7 +69,8 @@ describe('order sales API', () => {
   })
 
   it('posts create order payload to the orders endpoint', async () => {
-    const calls: Array<{ path: string, body?: unknown }> = []
+    const calls: Array<{ path: string; body?: unknown }> = []
+
     const client = {
       post: async <T>(path: string, body?: unknown) => {
         calls.push({ path, body })
@@ -90,7 +92,7 @@ describe('order sales API', () => {
       customerName: 'Nguyen Van A',
       createdBy: 'user-1',
       createdByName: 'Admin RetailOps',
-      paymentMethod: 'cash',
+      paymentMethod: 'Tiền mặt',
       promotionCode: null,
       note: null,
       items: [
@@ -114,7 +116,8 @@ describe('order sales API', () => {
   })
 
   it('loads customers for POS selection', async () => {
-    const calls: Array<{ path: string, query?: Record<string, unknown> }> = []
+    const calls: Array<{ path: string; query?: Record<string, unknown> }> = []
+
     const client = {
       get: async <T>(path: string, options?: { query?: Record<string, unknown> }) => {
         calls.push({ path, query: options?.query })
@@ -158,6 +161,7 @@ describe('order sales API', () => {
 
   it('loads active promotions for POS selection', async () => {
     const calls: string[] = []
+
     const client = {
       get: async <T>(path: string) => {
         calls.push(path)
@@ -188,7 +192,8 @@ describe('order sales API', () => {
   })
 
   it('loads suppliers for supplier and debt pages', async () => {
-    const calls: Array<{ path: string, query?: Record<string, unknown> }> = []
+    const calls: Array<{ path: string; query?: Record<string, unknown> }> = []
+
     const client = {
       get: async <T>(path: string, options?: { query?: Record<string, unknown> }) => {
         calls.push({ path, query: options?.query })
@@ -230,6 +235,7 @@ describe('order sales API', () => {
 
   it('loads the current POS shift', async () => {
     const calls: string[] = []
+
     const client = {
       get: async <T>(path: string) => {
         calls.push(path)
@@ -244,10 +250,7 @@ describe('order sales API', () => {
           openingCash: 0,
           actualCash: null,
           expectedCash: 0,
-          totalCashSales: 0,
-          totalTransferSales: 0,
-          totalCardSales: 0,
-          totalDebtSales: 0,
+          variance: 0,
           status: 'Open',
           note: null,
         } as T
@@ -261,7 +264,8 @@ describe('order sales API', () => {
   })
 
   it('opens a POS shift', async () => {
-    const calls: Array<{ path: string, body?: unknown }> = []
+    const calls: Array<{ path: string; body?: unknown }> = []
+
     const client = {
       post: async <T>(path: string, body?: unknown) => {
         calls.push({ path, body })
@@ -276,10 +280,7 @@ describe('order sales API', () => {
           openingCash: 0,
           actualCash: null,
           expectedCash: 0,
-          totalCashSales: 0,
-          totalTransferSales: 0,
-          totalCardSales: 0,
-          totalDebtSales: 0,
+          variance: 0,
           status: 'Open',
           note: 'Open from POS',
         } as T
@@ -294,7 +295,8 @@ describe('order sales API', () => {
   })
 
   it('posts customer payments to the payments endpoint', async () => {
-    const calls: Array<{ path: string, body?: unknown }> = []
+    const calls: Array<{ path: string; body?: unknown }> = []
+
     const client = {
       post: async <T>(path: string, body?: unknown) => {
         calls.push({ path, body })
@@ -304,7 +306,7 @@ describe('order sales API', () => {
           orderId: 'order-1',
           customerId: 'customer-1',
           amount: 200000,
-          paymentMethod: 'cash',
+          paymentMethod: 'Tiền mặt',
           note: null,
           receivedByName: 'Admin RetailOps',
           paymentDate: '2026-06-01T09:00:00Z',
@@ -316,7 +318,7 @@ describe('order sales API', () => {
       orderId: 'order-1',
       customerId: 'customer-1',
       amount: 200000,
-      paymentMethod: 'cash',
+      paymentMethod: 'Tiền mặt',
       note: null,
       receivedBy: 'user-1',
       receivedByName: 'Admin RetailOps',

@@ -246,15 +246,19 @@ onMounted(loadDashboard)
     {{ errorMessage }}
   </VAlert>
 
-  <VTabs
-    v-model="activeTab"
-    class="mb-6"
-  >
-    <VTab :value="0">Tổng quan</VTab>
-    <VTab :value="1">Báo cáo Lợi nhuận</VTab>
-    <VTab :value="2">Xếp hạng bán hàng</VTab>
-    <VTab :value="3">Doanh số theo ngày</VTab>
-  </VTabs>
+  <VCard class="retail-panel-card mb-6">
+    <VCardText class="py-3">
+      <VTabs
+        v-model="activeTab"
+        density="comfortable"
+      >
+        <VTab :value="0" prepend-icon="ri-dashboard-3-line">Tổng quan</VTab>
+        <VTab :value="1" prepend-icon="ri-line-chart-line">Báo cáo lợi nhuận</VTab>
+        <VTab :value="2" prepend-icon="ri-trophy-line">Xếp hạng bán hàng</VTab>
+        <VTab :value="3" prepend-icon="ri-calendar-event-line">Doanh số theo ngày</VTab>
+      </VTabs>
+    </VCardText>
+  </VCard>
 
   <VWindow v-model="activeTab">
     <!-- Tab 0: Overview and standard metrics -->
@@ -270,7 +274,7 @@ onMounted(loadDashboard)
           sm="6"
           lg="3"
         >
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardText>
               <VSkeletonLoader type="list-item-avatar-two-line" />
             </VCardText>
@@ -281,7 +285,7 @@ onMounted(loadDashboard)
           cols="12"
           lg="8"
         >
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardText>
               <VSkeletonLoader type="heading, image, list-item-two-line" />
             </VCardText>
@@ -292,7 +296,7 @@ onMounted(loadDashboard)
           cols="12"
           lg="4"
         >
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardText>
               <VSkeletonLoader type="heading, paragraph" />
             </VCardText>
@@ -300,7 +304,7 @@ onMounted(loadDashboard)
         </VCol>
 
         <VCol cols="12">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardText>
               <VSkeletonLoader type="heading, table-tbody" />
             </VCardText>
@@ -326,10 +330,25 @@ onMounted(loadDashboard)
           cols="12"
           lg="8"
         >
-          <VCard>
+          <VCard class="retail-panel-card h-100">
             <VCardItem>
-              <VCardTitle>Doanh thu 7 ngày gần nhất</VCardTitle>
-              <VCardSubtitle>Dữ liệu tổng hợp từ báo cáo doanh thu</VCardSubtitle>
+              <div class="retail-panel-heading">
+                <div>
+                  <div class="retail-panel-kicker mb-1">
+                    Doanh thu
+                  </div>
+                  <VCardTitle>Doanh thu 7 ngày gần nhất</VCardTitle>
+                  <VCardSubtitle>Dữ liệu tổng hợp từ báo cáo doanh thu</VCardSubtitle>
+                </div>
+                <VChip
+                  color="primary"
+                  variant="tonal"
+                  size="small"
+                  prepend-icon="ri-bar-chart-grouped-line"
+                >
+                  7 ngày
+                </VChip>
+              </div>
             </VCardItem>
 
             <VCardText>
@@ -367,10 +386,24 @@ onMounted(loadDashboard)
           cols="12"
           lg="4"
         >
-          <VCard class="h-100">
+          <VCard class="retail-panel-card h-100">
             <VCardItem>
-              <VCardTitle>Cảnh báo tồn kho</VCardTitle>
-              <VCardSubtitle>SKU dưới ngưỡng an toàn</VCardSubtitle>
+              <div class="retail-panel-heading">
+                <div>
+                  <div class="retail-panel-kicker mb-1">
+                    Tồn kho
+                  </div>
+                  <VCardTitle>Cảnh báo tồn kho</VCardTitle>
+                  <VCardSubtitle>SKU dưới ngưỡng an toàn cần xử lý</VCardSubtitle>
+                </div>
+                <VChip
+                  :color="stockAlerts.length ? 'warning' : 'success'"
+                  variant="tonal"
+                  size="small"
+                >
+                  {{ stockAlerts.length }} cảnh báo
+                </VChip>
+              </div>
             </VCardItem>
 
             <VList v-if="stockAlerts.length">
@@ -393,21 +426,46 @@ onMounted(loadDashboard)
             </VList>
 
             <VCardText v-else>
-              <VAlert
-                type="success"
-                variant="tonal"
-              >
-                Tất cả SKU đều trên ngưỡng an toàn.
-              </VAlert>
+              <div class="retail-empty-state">
+                <div>
+                  <VIcon
+                    icon="ri-shield-check-line"
+                    color="success"
+                    size="34"
+                    class="mb-2"
+                  />
+                  <div class="font-weight-bold text-high-emphasis mb-1">
+                    Tồn kho đang an toàn
+                  </div>
+                  <div class="text-body-2">
+                    Tất cả SKU đều trên ngưỡng an toàn.
+                  </div>
+                </div>
+              </div>
             </VCardText>
           </VCard>
         </VCol>
 
         <VCol cols="12">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
-              <VCardTitle>Hoạt động gần đây</VCardTitle>
-              <VCardSubtitle>10 hoạt động gần nhất trong hệ thống</VCardSubtitle>
+              <div class="retail-panel-heading">
+                <div>
+                  <div class="retail-panel-kicker mb-1">
+                    Audit log
+                  </div>
+                  <VCardTitle>Hoạt động gần đây</VCardTitle>
+                  <VCardSubtitle>10 hoạt động gần nhất trong hệ thống</VCardSubtitle>
+                </div>
+                <VChip
+                  color="info"
+                  variant="tonal"
+                  size="small"
+                  prepend-icon="ri-history-line"
+                >
+                  Theo thời gian thực
+                </VChip>
+              </div>
             </VCardItem>
 
             <VTable
@@ -438,12 +496,22 @@ onMounted(loadDashboard)
             </VTable>
 
             <VCardText v-else>
-              <VAlert
-                type="info"
-                variant="tonal"
-              >
-                Chưa có hoạt động nào được ghi nhận.
-              </VAlert>
+              <div class="retail-empty-state">
+                <div>
+                  <VIcon
+                    icon="ri-time-line"
+                    color="info"
+                    size="34"
+                    class="mb-2"
+                  />
+                  <div class="font-weight-bold text-high-emphasis mb-1">
+                    Chưa có hoạt động
+                  </div>
+                  <div class="text-body-2">
+                    Chưa có hoạt động nào được ghi nhận.
+                  </div>
+                </div>
+              </div>
             </VCardText>
           </VCard>
         </VCol>
@@ -454,7 +522,7 @@ onMounted(loadDashboard)
     <VWindowItem :value="1">
       <VRow>
         <VCol cols="12" lg="6">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Lợi nhuận gộp theo ngày</VCardTitle>
               <VCardSubtitle>So sánh Doanh thu - Giá vốn - Lợi nhuận thực tế</VCardSubtitle>
@@ -484,7 +552,7 @@ onMounted(loadDashboard)
         </VCol>
 
         <VCol cols="12" lg="6">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Tỷ suất lợi nhuận trên từng sản phẩm</VCardTitle>
               <VCardSubtitle>Xác định biên lợi nhuận % của từng sản phẩm đã bán</VCardSubtitle>
@@ -523,7 +591,7 @@ onMounted(loadDashboard)
     <VWindowItem :value="2">
       <VRow>
         <VCol cols="12" lg="6">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Top 15 Sản phẩm bán chạy nhất</VCardTitle>
               <VCardSubtitle>Sản phẩm dẫn đầu doanh số và số lượng bán</VCardSubtitle>
@@ -540,7 +608,7 @@ onMounted(loadDashboard)
               <tbody>
                 <tr v-for="(prod, i) in topProducts" :key="prod.productId">
                   <td class="font-weight-bold">
-                    <span class="text-medium-emphasis mr-2">#{{ i + 1 }}</span>
+                    <span class="text-medium-emphasis me-2">#{{ i + 1 }}</span>
                     {{ prod.productName }}
                   </td>
                   <td>{{ prod.productCode }}</td>
@@ -556,7 +624,7 @@ onMounted(loadDashboard)
         </VCol>
 
         <VCol cols="12" lg="6">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Top 15 Khách hàng mua nhiều nhất</VCardTitle>
               <VCardSubtitle>Khách hàng VIP đóng góp nhiều doanh thu nhất</VCardSubtitle>
@@ -572,7 +640,7 @@ onMounted(loadDashboard)
               <tbody>
                 <tr v-for="(cust, i) in topCustomers" :key="cust.customerId">
                   <td class="font-weight-bold">
-                    <span class="text-medium-emphasis mr-2">#{{ i + 1 }}</span>
+                    <span class="text-medium-emphasis me-2">#{{ i + 1 }}</span>
                     {{ cust.customerName }}
                   </td>
                   <td class="text-center">{{ cust.ordersCount }}</td>
@@ -590,7 +658,7 @@ onMounted(loadDashboard)
 
     <!-- Tab 3: Daily Reports List -->
     <VWindowItem :value="3">
-      <VCard>
+      <VCard class="retail-panel-card">
         <VCardItem>
           <VCardTitle>Chi tiết báo cáo doanh số ngày</VCardTitle>
           <VCardSubtitle>Tổng hợp doanh thu, lượng giảm giá, số lượng đơn hàng hàng ngày</VCardSubtitle>

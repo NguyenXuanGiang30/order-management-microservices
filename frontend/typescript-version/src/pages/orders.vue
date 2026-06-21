@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from 'vue'
+import type { ActionMenuItem } from '@/components/RetailActionMenu.vue'
 import {
   getOrders,
   getOrderDetail,
@@ -271,6 +272,13 @@ const showHistory = async () => {
   }
 }
 
+const orderActions = (order: OrderDto): ActionMenuItem[] => [
+  { label: 'Xem chi tiết', icon: 'ri-eye-line', handler: () => openOrderDetail(order) },
+  { label: 'In hóa đơn', icon: 'ri-printer-line', color: 'success', handler: () => { selectedOrder.value = order; handlePrintInvoice() } },
+  { label: 'Trả hàng', icon: 'ri-arrow-go-back-line', color: 'warning', handler: () => { openOrderDetail(order).then(() => openReturnDialog()) }, show: order.status !== 'Cancelled' && order.status !== 'Returned' },
+  { label: 'Hủy đơn', icon: 'ri-close-circle-line', color: 'error', handler: () => { selectedOrder.value = order; handleCancelOrder() }, show: order.status !== 'Cancelled' },
+]
+
 watch(selectedStatus, () => {
   void loadOrders()
 })
@@ -296,59 +304,32 @@ onMounted(() => {
     </template>
   </RetailPageHeader>
 
-  <VCard>
-    <VCardText>
-      <VRow>
-        <VCol
-          cols="12"
-          md="8"
-        >
-          <VTextField
-            v-model="search"
-            label="Tìm đơn hàng"
-            placeholder="Mã đơn, khách hàng, thu ngân"
-            prepend-inner-icon="ri-search-line"
-            hide-details="auto"
-            @keyup.enter="loadOrders"
-          />
-        </VCol>
-        <VCol
-          cols="12"
-          md="4"
-        >
-          <VSelect
-            v-model="selectedStatus"
-            label="Trạng thái"
-            :items="statusOptions"
-            item-title="title"
-            item-value="value"
-            hide-details="auto"
-          />
-        </VCol>
-      </VRow>
+  <VAlert
+    v-if="errorMessage"
+    type="error"
+    variant="tonal"
+    class="mb-6"
+    closable
+    @click:close="errorMessage = ''"
+  >
+    {{ errorMessage }}
+  </VAlert>
 
-      <div class="d-flex justify-end mt-4">
-        <VBtn
-          variant="tonal"
-          prepend-icon="ri-refresh-line"
-          :loading="loading"
-          @click="loadOrders"
-        >
-          Tải lại
-        </VBtn>
-      </div>
-
-      <VAlert
-        v-if="errorMessage"
-        class="mt-4"
-        type="error"
-        variant="tonal"
-        closable
-        @click:close="errorMessage = ''"
-      >
-        {{ errorMessage }}
-      </VAlert>
-    </VCardText>
+  <VCard class="retail-panel-card">
+    <RetailFilterBar
+      v-model="search"
+      search-placeholder="Mã đơn, khách hàng, thu ngân..."
+      :filters="[{
+        key: 'status',
+        label: 'Trạng thái',
+        items: statusOptions,
+        modelValue: selectedStatus,
+      }]"
+      :loading="loading"
+      @search="loadOrders"
+      @reload="loadOrders"
+      @filterChange="(_key: string, val: any) => { selectedStatus = val }"
+    />
 
     <VCardText
       v-if="loading"
@@ -368,17 +349,16 @@ onMounted(() => {
           <th>Thu ngân</th>
           <th>Giờ</th>
           <th>Thanh toán</th>
-          <th class="text-end">
-            Tổng tiền
-          </th>
+          <th class="text-end">Tổng tiền</th>
           <th>Trạng thái</th>
+          <th class="text-center" style="width: 60px;">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="order in orders"
           :key="order.id"
-          class="cursor-pointer hover-row"
+          class="hover-row"
           @click="openOrderDetail(order)"
         >
           <td class="font-weight-bold text-primary">
@@ -392,17 +372,27 @@ onMounted(() => {
             {{ formatCurrency(order.finalAmount) }}
           </td>
           <td>
-            <RetailStatusChip :status="statusLabel(order.status)" />
+            <RetailStatusBadge
+              :status="statusLabel(order.status)"
+              dot
+            />
           </td>
-        </tr>
-        <tr v-if="!loading && !hasOrders">
           <td
-            colspan="7"
-            class="text-center text-medium-emphasis py-8"
+            class="text-center"
+            @click.stop
           >
-            Chưa có đơn hàng phù hợp.
+            <RetailActionMenu :items="orderActions(order)" />
           </td>
         </tr>
+        <RetailEmptyState
+          v-if="!loading && !hasOrders"
+          :colspan="8"
+          icon="ri-shopping-bag-line"
+          title="Chưa có đơn hàng phù hợp"
+          subtitle="Thử thay đổi bộ lọc hoặc tạo đơn hàng mới từ POS."
+          action-label="Tạo đơn POS"
+          action-to="/pos"
+        />
       </tbody>
     </VTable>
   </VCard>

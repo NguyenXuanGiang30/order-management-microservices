@@ -4,6 +4,12 @@ import { useRouter } from 'vue-router'
 
 import { useAuthStore } from '@/stores/auth'
 
+interface ProfileMenuItem {
+  title: string
+  icon: string
+  to: string
+}
+
 const router = useRouter()
 const authStore = useAuthStore()
 
@@ -31,6 +37,27 @@ const displayRole = computed(() => {
     return 'Thủ kho'
 
   return authStore.user?.role || 'Quản trị viên'
+})
+
+const menuItems = computed<ProfileMenuItem[]>(() => {
+  if (authStore.user?.role === 'Sales') {
+    return [
+      { title: 'Workspace bán hàng', icon: 'ri-store-2-line', to: '/sales' },
+      { title: 'Công nợ cần xử lý', icon: 'ri-file-list-3-line', to: '/debts' },
+    ]
+  }
+
+  if (authStore.user?.role === 'Warehouse') {
+    return [
+      { title: 'Workspace kho', icon: 'ri-home-gear-line', to: '/warehouse' },
+      { title: 'Tồn kho cần xử lý', icon: 'ri-archive-line', to: '/inventory' },
+    ]
+  }
+
+  return [
+    { title: 'Cài đặt hệ thống', icon: 'ri-settings-3-line', to: '/settings' },
+    { title: 'Công nợ cần xử lý', icon: 'ri-file-list-3-line', to: '/debts' },
+  ]
 })
 
 const logout = async () => {
@@ -81,26 +108,19 @@ const logout = async () => {
 
           <VDivider class="my-2" />
 
-          <VListItem to="/settings">
+          <VListItem
+            v-for="item in menuItems"
+            :key="item.to"
+            :to="item.to"
+          >
             <template #prepend>
               <VIcon
                 class="me-2"
-                icon="ri-settings-3-line"
+                :icon="item.icon"
                 size="22"
               />
             </template>
-            <VListItemTitle>Cài đặt hệ thống</VListItemTitle>
-          </VListItem>
-
-          <VListItem to="/debts">
-            <template #prepend>
-              <VIcon
-                class="me-2"
-                icon="ri-file-list-3-line"
-                size="22"
-              />
-            </template>
-            <VListItemTitle>Công nợ cần xử lý</VListItemTitle>
+            <VListItemTitle>{{ item.title }}</VListItemTitle>
           </VListItem>
 
           <VDivider class="my-2" />

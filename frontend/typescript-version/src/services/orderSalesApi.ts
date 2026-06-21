@@ -393,14 +393,11 @@ export interface CashShiftDto {
   cashierId: string
   cashierName: string
   openedAt: string
-  closedAt: string | null
   openingCash: number
-  actualCash: number | null
+  closedAt: string | null
   expectedCash: number
-  totalCashSales: number
-  totalTransferSales: number
-  totalCardSales: number
-  totalDebtSales: number
+  actualCash: number | null
+  variance: number
   status: string
   note: string | null
 }

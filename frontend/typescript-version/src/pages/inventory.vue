@@ -292,17 +292,24 @@ onMounted(loadStock)
         </VCol>
       </VRow>
 
-      <VCard>
-        <VCardText>
-          <VTextField
-            v-model="search"
-            label="Tìm tồn kho"
-            placeholder="Tên sản phẩm hoặc SKU"
-            prepend-inner-icon="ri-search-line"
-            :disabled="loading"
-            @keyup.enter="loadStock"
-          />
-        </VCardText>
+      <VAlert
+        v-if="lowStock > 0"
+        type="warning"
+        variant="tonal"
+        class="mb-6"
+        prepend-icon="ri-alert-line"
+      >
+        Có {{ lowStock }} mặt hàng chạm ngưỡng tồn tối thiểu. Vui lòng kiểm tra và lên kế hoạch nhập hàng!
+      </VAlert>
+
+      <VCard class="retail-panel-card">
+        <RetailFilterBar
+          v-model="search"
+          search-placeholder="Tên sản phẩm hoặc SKU..."
+          :loading="loading"
+          @search="loadStock"
+          @reload="loadStock"
+        />
 
         <VCardText
           v-if="loading"
@@ -330,22 +337,28 @@ onMounted(loadStock)
             <tr
               v-for="product in stockItems"
               :key="product.productId"
+              class="hover-row"
             >
               <td class="font-weight-bold">{{ product.productCode }}</td>
-              <td>{{ product.productName }}</td>
+              <td class="font-weight-bold text-primary">{{ product.productName }}</td>
               <td class="text-end">{{ product.quantityOnHand }} {{ product.unitName }}</td>
               <td class="text-end">{{ product.quantityReserved }} {{ product.unitName }}</td>
-              <td class="text-end font-weight-bold">{{ product.availableQuantity }} {{ product.unitName }}</td>
+              <td class="text-end font-weight-bold text-primary">{{ product.availableQuantity }} {{ product.unitName }}</td>
               <td class="text-end">{{ product.minThreshold }} {{ product.unitName }}</td>
               <td>
-                <RetailStatusChip :status="stockStatus(product)" />
+                <RetailStatusBadge
+                  :status="stockStatus(product)"
+                  dot
+                />
               </td>
             </tr>
-            <tr v-if="!loading && !stockItems.length">
-              <td colspan="7" class="text-center text-medium-emphasis py-8">
-                Không có dữ liệu tồn kho phù hợp.
-              </td>
-            </tr>
+            <RetailEmptyState
+              v-if="!loading && !stockItems.length"
+              :colspan="7"
+              icon="ri-archive-line"
+              title="Không tìm thấy dữ liệu tồn kho"
+              subtitle="Thử nhập từ khóa khác hoặc kiểm tra lại."
+            />
           </tbody>
         </VTable>
       </VCard>
@@ -353,7 +366,7 @@ onMounted(loadStock)
 
     <!-- Tab 1: Stocktake Sessions -->
     <VWindowItem :value="1">
-      <VCard>
+      <VCard class="retail-panel-card">
         <VTable class="retail-table">
           <thead>
             <tr>
@@ -369,7 +382,7 @@ onMounted(loadStock)
             <tr
               v-for="session in sessions"
               :key="session.id"
-              class="cursor-pointer hover-row"
+              class="hover-row"
               @click="openSessionDetail(session.id)"
             >
               <td class="font-weight-bold text-primary">{{ session.code }}</td>
@@ -378,19 +391,19 @@ onMounted(loadStock)
               <td>{{ formatDate(session.confirmedAt || '') }}</td>
               <td>{{ session.note || '—' }}</td>
               <td>
-                <VChip
-                  :color="session.status === 'Confirmed' ? 'success' : (session.status === 'Cancelled' ? 'error' : 'warning')"
-                  size="small"
-                >
-                  {{ session.status === 'Confirmed' ? 'Đã cân kho' : (session.status === 'Cancelled' ? 'Đã hủy' : 'Bản nháp') }}
-                </VChip>
+                <RetailStatusBadge
+                  :status="session.status === 'Confirmed' ? 'Đã xác nhận' : (session.status === 'Cancelled' ? 'Đã hủy' : 'Bản nháp')"
+                  dot
+                />
               </td>
             </tr>
-            <tr v-if="!sessions.length">
-              <td colspan="6" class="text-center text-medium-emphasis py-8">
-                Chưa lập đợt kiểm kê điều chỉnh nào.
-              </td>
-            </tr>
+            <RetailEmptyState
+              v-if="!sessions.length"
+              :colspan="6"
+              icon="ri-survey-line"
+              title="Chưa có phiên kiểm kê nào"
+              subtitle="Tạo phiên kiểm kê để cân đối chênh lệch hàng thực tế và hệ thống."
+            />
           </tbody>
         </VTable>
       </VCard>
@@ -531,9 +544,10 @@ onMounted(loadStock)
     <VCard v-if="selectedSession">
       <VCardTitle class="d-flex justify-between align-center">
         <span>Đợt kiểm kê: {{ selectedSession.code }}</span>
-        <VChip :color="selectedSession.status === 'Confirmed' ? 'success' : (selectedSession.status === 'Cancelled' ? 'error' : 'warning')">
-          {{ selectedSession.status === 'Confirmed' ? 'Đã cân kho' : (selectedSession.status === 'Cancelled' ? 'Đã hủy' : 'Bản nháp') }}
-        </VChip>
+        <RetailStatusBadge
+          :status="selectedSession.status === 'Confirmed' ? 'Đã xác nhận' : (selectedSession.status === 'Cancelled' ? 'Đã hủy' : 'Bản nháp')"
+          dot
+        />
       </VCardTitle>
       <VCardText>
         <VRow class="mb-4">

@@ -245,7 +245,7 @@ onMounted(() => {
     <VWindowItem :value="0">
       <VRow>
         <VCol cols="12" lg="7">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem class="d-flex justify-between align-center">
               <div>
                 <VCardTitle>Tài khoản nhân viên</VCardTitle>
@@ -276,11 +276,12 @@ onMounted(() => {
                 <tr
                   v-for="u in usersList"
                   :key="u.id"
+                  class="hover-row"
                 >
-                  <td class="font-weight-bold">{{ u.username }}</td>
+                  <td class="font-weight-bold text-primary">{{ u.username }}</td>
                   <td>{{ u.fullName }}</td>
                   <td>
-                    <VChip size="small" color="primary">{{ u.role }}</VChip>
+                    <RetailStatusBadge :status="u.role" />
                   </td>
                   <td>
                     <VSwitch
@@ -296,17 +297,25 @@ onMounted(() => {
                       icon="ri-edit-line"
                       variant="text"
                       size="small"
+                      color="primary"
                       @click="handleOpenEditUser(u)"
                     />
                   </td>
                 </tr>
+                <RetailEmptyState
+                  v-if="!usersList.length"
+                  :colspan="5"
+                  icon="ri-user-settings-line"
+                  title="Chưa có tài khoản nhân viên nào"
+                  subtitle="Tạo tài khoản mới để cấp quyền truy cập."
+                />
               </tbody>
             </VTable>
           </VCard>
         </VCol>
 
         <VCol cols="12" lg="5">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Chi tiết phân quyền</VCardTitle>
               <VCardSubtitle>Quản lý các chức năng cho từng nhóm vai trò</VCardSubtitle>
@@ -354,7 +363,7 @@ onMounted(() => {
 
     <!-- Tab 1: Activity logs -->
     <VWindowItem :value="1">
-      <VCard>
+      <VCard class="retail-panel-card">
         <VCardItem>
           <VCardTitle>Nhật ký hệ thống</VCardTitle>
           <VCardSubtitle>Danh sách thao tác, sự kiện và mức độ nghiêm trọng</VCardSubtitle>
@@ -374,26 +383,27 @@ onMounted(() => {
             <tr
               v-for="log in activityLogs"
               :key="log.id"
+              class="hover-row"
             >
-              <td class="font-weight-bold">{{ log.userName }}</td>
+              <td class="font-weight-bold text-primary">{{ log.userName }}</td>
               <td>{{ log.serviceName }}</td>
               <td>{{ log.action }}</td>
               <td>{{ log.entityType }}</td>
               <td>
-                <VChip
-                  :color="log.severity === 'Error' ? 'error' : (log.severity === 'Warning' ? 'warning' : 'info')"
-                  size="small"
-                >
-                  {{ log.severity }}
-                </VChip>
+                <RetailStatusBadge
+                  :status="log.severity === 'Error' ? 'Nghiêm trọng' : (log.severity === 'Warning' ? 'Cần theo dõi' : 'Bình thường')"
+                  dot
+                />
               </td>
               <td>{{ formatDate(log.createdAt) }}</td>
             </tr>
-            <tr v-if="!activityLogs.length">
-              <td colspan="6" class="text-center text-medium-emphasis py-8">
-                Không có nhật ký nào được ghi nhận.
-              </td>
-            </tr>
+            <RetailEmptyState
+              v-if="!activityLogs.length"
+              :colspan="6"
+              icon="ri-history-line"
+              title="Chưa có bản ghi hoạt động nào"
+              subtitle="Nhật ký thao tác hệ thống sẽ được hiển thị tại đây."
+            />
           </tbody>
         </VTable>
       </VCard>
@@ -403,7 +413,7 @@ onMounted(() => {
     <VWindowItem :value="2">
       <VRow>
         <VCol cols="12" lg="8">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Lịch sử sao lưu hệ thống</VCardTitle>
               <VCardSubtitle>Khôi phục dữ liệu về các thời điểm sao lưu trước đó</VCardSubtitle>
@@ -423,6 +433,7 @@ onMounted(() => {
                 <tr
                   v-for="b in backupsList"
                   :key="b.id"
+                  class="hover-row"
                 >
                   <td class="font-weight-bold text-success">{{ b.fileName }}</td>
                   <td>{{ b.createdByName }}</td>
@@ -440,18 +451,20 @@ onMounted(() => {
                     </VBtn>
                   </td>
                 </tr>
-                <tr v-if="!backupsList.length">
-                  <td colspan="5" class="text-center text-medium-emphasis py-8">
-                    Chưa có bản sao lưu nào.
-                  </td>
-                </tr>
+                <RetailEmptyState
+                  v-if="!backupsList.length"
+                  :colspan="5"
+                  icon="ri-database-line"
+                  title="Chưa có dữ liệu sao lưu"
+                  subtitle="Tạo sao lưu mới để phòng tránh mất mát dữ liệu."
+                />
               </tbody>
             </VTable>
           </VCard>
         </VCol>
 
         <VCol cols="12" lg="4">
-          <VCard>
+          <VCard class="retail-panel-card">
             <VCardItem>
               <VCardTitle>Tạo bản sao lưu</VCardTitle>
               <VCardSubtitle>Sao lưu cơ sở dữ liệu và lưu cấu hình trạng thái</VCardSubtitle>

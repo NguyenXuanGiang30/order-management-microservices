@@ -99,27 +99,38 @@ onMounted(loadDebts)
       cols="12"
       lg="6"
     >
-      <VCard>
+      <VCard class="retail-panel-card">
         <VCardItem>
           <VCardTitle>Công nợ khách hàng</VCardTitle>
+          <VCardSubtitle>Danh sách khách hàng còn nợ chưa thanh toán</VCardSubtitle>
         </VCardItem>
-        <VList>
-          <VListItem
-            v-for="customer in customersWithDebt"
-            :key="customer.id"
-          >
-            <VListItemTitle>{{ customer.fullName }}</VListItemTitle>
-            <VListItemSubtitle>{{ customer.phone || '—' }}</VListItemSubtitle>
-            <template #append>
-              <strong>{{ formatCurrency(customer.debtAmount) }}</strong>
-            </template>
-          </VListItem>
-          <VListItem v-if="!loading && !customersWithDebt.length">
-            <VListItemTitle class="text-medium-emphasis">
-              Không có công nợ khách hàng.
-            </VListItemTitle>
-          </VListItem>
-        </VList>
+        <VTable class="retail-table">
+          <thead>
+            <tr>
+              <th>Khách hàng</th>
+              <th>Điện thoại</th>
+              <th class="text-end">Số tiền nợ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="customer in customersWithDebt"
+              :key="customer.id"
+              class="hover-row"
+            >
+              <td class="font-weight-bold">{{ customer.fullName }}</td>
+              <td>{{ customer.phone || '—' }}</td>
+              <td class="text-end font-weight-bold text-warning">{{ formatCurrency(customer.debtAmount) }}</td>
+            </tr>
+            <RetailEmptyState
+              v-if="!loading && !customersWithDebt.length"
+              :colspan="3"
+              icon="ri-check-double-line"
+              title="Không có công nợ khách hàng"
+              subtitle="Tất cả khách hàng đã thanh toán đầy đủ."
+            />
+          </tbody>
+        </VTable>
       </VCard>
     </VCol>
 
@@ -127,27 +138,38 @@ onMounted(loadDebts)
       cols="12"
       lg="6"
     >
-      <VCard>
+      <VCard class="retail-panel-card">
         <VCardItem>
           <VCardTitle>Công nợ nhà cung cấp</VCardTitle>
+          <VCardSubtitle>Danh sách nhà cung cấp cần thanh toán</VCardSubtitle>
         </VCardItem>
-        <VList>
-          <VListItem
-            v-for="supplier in suppliersWithDebt"
-            :key="supplier.id"
-          >
-            <VListItemTitle>{{ supplier.name }}</VListItemTitle>
-            <VListItemSubtitle>{{ supplier.note || '—' }}</VListItemSubtitle>
-            <template #append>
-              <strong>{{ formatCurrency(supplier.debtAmount) }}</strong>
-            </template>
-          </VListItem>
-          <VListItem v-if="!loading && !suppliersWithDebt.length">
-            <VListItemTitle class="text-medium-emphasis">
-              Không có công nợ nhà cung cấp.
-            </VListItemTitle>
-          </VListItem>
-        </VList>
+        <VTable class="retail-table">
+          <thead>
+            <tr>
+              <th>Nhà cung cấp</th>
+              <th>Ghi chú</th>
+              <th class="text-end">Số tiền nợ</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr
+              v-for="supplier in suppliersWithDebt"
+              :key="supplier.id"
+              class="hover-row"
+            >
+              <td class="font-weight-bold">{{ supplier.name }}</td>
+              <td>{{ supplier.note || '—' }}</td>
+              <td class="text-end font-weight-bold text-error">{{ formatCurrency(supplier.debtAmount) }}</td>
+            </tr>
+            <RetailEmptyState
+              v-if="!loading && !suppliersWithDebt.length"
+              :colspan="3"
+              icon="ri-check-double-line"
+              title="Không có công nợ nhà cung cấp"
+              subtitle="Đã thanh toán đầy đủ cho tất cả nhà cung cấp."
+            />
+          </tbody>
+        </VTable>
       </VCard>
     </VCol>
   </VRow>

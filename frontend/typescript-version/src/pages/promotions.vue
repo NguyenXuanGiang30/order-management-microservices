@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ActionMenuItem } from '@/components/RetailActionMenu.vue'
 import {
   type PromotionDto,
   getPromotions,
@@ -207,6 +208,11 @@ const handleSavePromotion = async () => {
   }
 }
 
+const promoActions = (promo: PromotionDto): ActionMenuItem[] => [
+  { label: 'Chỉnh sửa', icon: 'ri-edit-line', color: 'primary', handler: () => openEditDialog(promo) },
+  { label: promo.isActive ? 'Tắt kích hoạt' : 'Kích hoạt', icon: promo.isActive ? 'ri-toggle-line' : 'ri-toggle-fill', color: promo.isActive ? 'warning' : 'success', handler: () => handleToggleActive(promo) },
+]
+
 onMounted(loadPromotions)
 </script>
 
@@ -237,7 +243,7 @@ onMounted(loadPromotions)
     {{ errorMessage }}
   </VAlert>
 
-  <VCard>
+  <VCard class="retail-panel-card">
     <VCardText
       v-if="loading"
       class="pt-0"
@@ -253,28 +259,27 @@ onMounted(loadPromotions)
         <tr>
           <th>Mã khuyến mãi</th>
           <th>Tên chương trình</th>
-          <th>Phạm vi áp dụng</th>
+          <th>Phạm vi</th>
           <th>Loại chiết khấu</th>
           <th>Giá trị giảm</th>
           <th>Hiệu lực từ</th>
           <th>Đến ngày</th>
-          <th class="text-center">Kích hoạt</th>
-          <th class="text-center">Sửa</th>
+          <th class="text-center">Trạng thái</th>
+          <th class="text-center" style="width: 60px;">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="promotion in promotions"
           :key="promotion.id"
+          class="hover-row"
         >
           <td class="font-weight-bold text-primary">
             {{ promotion.code }}
           </td>
           <td>{{ promotion.name }}</td>
           <td>
-            <VChip size="small" :color="promotion.promotionType === 'Order' ? 'info' : 'warning'">
-              {{ promotion.promotionType === 'Order' ? 'Đơn hàng' : 'Sản phẩm' }}
-            </VChip>
+            <RetailStatusBadge :status="promotion.promotionType === 'Order' ? 'Đơn hàng' : 'Sản phẩm'" />
           </td>
           <td>
             {{ promotion.discountType === 'Percent' ? 'Phần trăm (%)' : 'Số tiền cố định' }}
@@ -283,31 +288,26 @@ onMounted(loadPromotions)
           <td>{{ formatDate(promotion.startAt) }}</td>
           <td>{{ formatDate(promotion.endAt) }}</td>
           <td class="text-center">
-            <VSwitch
-              :model-value="promotion.isActive"
-              color="success"
-              density="compact"
-              hide-details
-              @change="handleToggleActive(promotion)"
+            <RetailStatusBadge
+              :status="promotion.isActive ? 'Đang chạy' : 'Tạm dừng'"
+              dot
             />
           </td>
-          <td class="text-center">
-            <VBtn
-              icon="ri-edit-line"
-              variant="text"
-              size="small"
-              @click="openEditDialog(promotion)"
-            />
-          </td>
-        </tr>
-        <tr v-if="!loading && !promotions.length">
           <td
-            colspan="9"
-            class="text-center text-medium-emphasis py-8"
+            class="text-center"
+            @click.stop
           >
-            Chưa có chương trình khuyến mãi nào được cấu hình.
+            <RetailActionMenu :items="promoActions(promotion)" />
           </td>
         </tr>
+        <RetailEmptyState
+          v-if="!loading && !promotions.length"
+          :colspan="9"
+          icon="ri-coupon-3-line"
+          title="Chưa có chương trình khuyến mãi nào"
+          subtitle="Tạo chương trình khuyến mãi mới để bắt đầu."
+          action-label="Tạo khuyến mãi"
+        />
       </tbody>
     </VTable>
   </VCard>

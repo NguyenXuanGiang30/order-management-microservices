@@ -297,10 +297,31 @@ export const importStocktakeCounts = (
   client: { post<T>(path: string, body?: unknown): Promise<T> } = apiClient,
 ) => {
   const formData = new FormData()
+
   formData.append('file', file)
 
   // We can bypass standard JSON headers in API client by letting fetch handle it with FormData
   return client.post<boolean>(`/api/inventory/stocktakes/${id}/import`, formData)
+}
+
+export interface ImportedReceiptItemResultDto {
+  productId: string
+  productCode: string
+  productName: string
+  unitName: string
+  quantity: number
+  importPrice: number
+}
+
+export const importGoodsReceiptItems = (
+  file: File,
+  client: { post<T>(path: string, body?: unknown): Promise<T> } = apiClient,
+) => {
+  const formData = new FormData()
+
+  formData.append('file', file)
+
+  return client.post<ImportedReceiptItemResultDto[]>('/api/inventory/receipts/import-items', formData)
 }
 
 export const getInventoryTransactions = (

@@ -32,7 +32,10 @@
         "./src/assets/images/*"
       ],
       "@styles/*": [
-        "./src/styles/*"
+        "./src/assets/styles/*"
+      ],
+      "@styles": [
+        "./src/assets/styles"
       ]
     },
     "lib": [

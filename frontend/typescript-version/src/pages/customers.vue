@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ActionMenuItem } from '@/components/RetailActionMenu.vue'
 import {
   type CustomerDto,
   type CustomerGroupDto,
@@ -67,6 +68,27 @@ const formatDate = (dateStr: string) => {
     minute: '2-digit',
   })
 }
+
+const search = ref('')
+
+const totalCustomers = computed(() => customers.value.length)
+const customersWithDebt = computed(() => customers.value.filter(c => c.debtAmount > 0).length)
+const totalDebt = computed(() => customers.value.reduce((sum, c) => sum + c.debtAmount, 0))
+
+const filteredCustomers = computed(() => {
+  const q = search.value.trim().toLowerCase()
+  if (!q) return customers.value
+  return customers.value.filter(c =>
+    c.fullName.toLowerCase().includes(q) ||
+    c.code.toLowerCase().includes(q) ||
+    (c.phone && c.phone.includes(q)),
+  )
+})
+
+const customerActions = (customer: CustomerDto): ActionMenuItem[] => [
+  { label: 'Xem chi tiết', icon: 'ri-eye-line', handler: () => openCustomerDetails(customer) },
+  { label: 'Chỉnh sửa', icon: 'ri-edit-line', color: 'primary', handler: () => openEditCustomer(customer) },
+]
 
 const loadCustomers = async () => {
   loading.value = true
@@ -256,7 +278,43 @@ onMounted(async () => {
     {{ errorMessage }}
   </VAlert>
 
-  <VCard>
+  <VRow class="mb-2">
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Tổng khách hàng', value: String(totalCustomers), helper: 'Khách đang quản lý', icon: 'ri-group-line', color: 'primary' }" />
+    </VCol>
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Khách có công nợ', value: String(customersWithDebt), helper: 'Cần theo dõi thanh toán', icon: 'ri-user-follow-line', color: 'warning' }" />
+    </VCol>
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Tổng công nợ', value: formatCurrency(totalDebt), helper: 'Phải thu từ khách hàng', icon: 'ri-money-dollar-circle-line', color: 'error' }" />
+    </VCol>
+  </VRow>
+
+  <VCard class="retail-panel-card">
+    <RetailFilterBar
+      v-model="search"
+      search-placeholder="Tên, mã khách, số điện thoại..."
+      :loading="loading"
+      @search="loadCustomers"
+      @reload="loadCustomers"
+    >
+      <template #actions>
+        <VBtn
+          variant="tonal"
+          prepend-icon="ri-group-line"
+          @click="groupDialog = true"
+        >
+          Quản lý nhóm
+        </VBtn>
+        <VBtn
+          prepend-icon="ri-user-add-line"
+          @click="openAddCustomer"
+        >
+          Thêm khách hàng
+        </VBtn>
+      </template>
+    </RetailFilterBar>
+
     <VCardText
       v-if="loading"
       class="pt-0"
@@ -274,29 +332,23 @@ onMounted(async () => {
           <th>Tên khách</th>
           <th>Điện thoại</th>
           <th>Nhóm</th>
-          <th class="text-end">
-            Công nợ
-          </th>
+          <th class="text-end">Công nợ</th>
           <th>Trạng thái</th>
-          <th class="text-center">Thao tác</th>
+          <th class="text-center" style="width: 60px;">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr
-          v-for="customer in customers"
+          v-for="customer in filteredCustomers"
           :key="customer.id"
+          class="hover-row"
+          @click="openCustomerDetails(customer)"
         >
           <td class="font-weight-bold">
             {{ customer.code }}
           </td>
-          <td>
-            <a
-              href="javascript:void(0)"
-              class="text-primary font-weight-bold"
-              @click="openCustomerDetails(customer)"
-            >
-              {{ customer.fullName }}
-            </a>
+          <td class="font-weight-bold text-primary">
+            {{ customer.fullName }}
           </td>
           <td>{{ customer.phone || '—' }}</td>
           <td>{{ customer.customerGroupName || '—' }}</td>
@@ -304,26 +356,26 @@ onMounted(async () => {
             {{ formatCurrency(customer.debtAmount) }}
           </td>
           <td>
-            <RetailStatusChip :status="customer.isActive ? 'Đang hoạt động' : 'Tạm dừng'" />
-          </td>
-          <td class="text-center">
-            <VBtn
-              icon="ri-edit-line"
-              variant="text"
-              size="small"
-              color="primary"
-              @click="openEditCustomer(customer)"
+            <RetailStatusBadge
+              :status="customer.isActive ? 'Đang hoạt động' : 'Tạm dừng'"
+              dot
             />
           </td>
-        </tr>
-        <tr v-if="!loading && !customers.length">
           <td
-            colspan="7"
-            class="text-center text-medium-emphasis py-8"
+            class="text-center"
+            @click.stop
           >
-            Chưa có dữ liệu khách hàng.
+            <RetailActionMenu :items="customerActions(customer)" />
           </td>
         </tr>
+        <RetailEmptyState
+          v-if="!loading && !filteredCustomers.length"
+          :colspan="7"
+          icon="ri-user-line"
+          title="Chưa có dữ liệu khách hàng"
+          subtitle="Thêm khách hàng mới để bắt đầu quản lý."
+          action-label="Thêm khách hàng"
+        />
       </tbody>
     </VTable>
   </VCard>

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { ActionMenuItem } from '@/components/RetailActionMenu.vue'
 import {
   type ProductDto,
   type CategoryDto,
@@ -76,6 +77,15 @@ const stockStatus = (product: ProductDto) => {
 
   return 'Tốt'
 }
+
+const totalProducts = computed(() => products.value.length)
+const lowStockProducts = computed(() => products.value.filter(p => p.quantityOnHand > 0 && p.quantityOnHand <= p.quantityReserved).length)
+const outOfStockProducts = computed(() => products.value.filter(p => p.quantityOnHand <= 0).length)
+
+const productActions = (product: ProductDto): ActionMenuItem[] => [
+  { label: 'Chỉnh sửa', icon: 'ri-edit-line', color: 'primary', handler: () => openEditProduct(product) },
+  { label: product.isActive ? 'Ngừng bán' : 'Bán lại', icon: product.isActive ? 'ri-error-warning-line' : 'ri-checkbox-circle-line', color: product.isActive ? 'error' : 'success', handler: () => handleToggleActive(product) },
+]
 
 const loadCategories = async () => {
   try {
@@ -292,35 +302,49 @@ onMounted(async () => {
     {{ errorMessage }}
   </VAlert>
 
-  <VCard>
-    <VCardText>
-      <VRow>
-        <VCol
-          cols="12"
-          md="8"
+  <VRow class="mb-2">
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Tổng SKU sản phẩm', value: String(totalProducts), helper: 'Mặt hàng đang quản lý', icon: 'ri-archive-line', color: 'primary' }" />
+    </VCol>
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Sản phẩm tồn thấp', value: String(lowStockProducts), helper: 'Cần lên kế hoạch nhập hàng', icon: 'ri-alert-line', color: 'warning' }" />
+    </VCol>
+    <VCol cols="12" md="4">
+      <RetailMetricCard :metric="{ label: 'Sản phẩm hết hàng', value: String(outOfStockProducts), helper: 'Hết hàng trong kho', icon: 'ri-close-circle-line', color: 'error' }" />
+    </VCol>
+  </VRow>
+
+  <VCard class="retail-panel-card">
+    <RetailFilterBar
+      v-model="search"
+      search-placeholder="Tên sản phẩm, SKU, barcode..."
+      :filters="[{
+        key: 'category',
+        label: 'Danh mục',
+        items: categoryItems.map(c => ({ title: c, value: c })),
+        modelValue: selectedCategory,
+      }]"
+      :loading="loading"
+      @search="loadProducts"
+      @reload="loadProducts"
+      @filterChange="(_key: string, val: any) => { selectedCategory = val }"
+    >
+      <template #actions>
+        <VBtn
+          variant="tonal"
+          prepend-icon="ri-folder-settings-line"
+          @click="categoryDialog = true"
         >
-          <VTextField
-            v-model="search"
-            label="Tìm sản phẩm"
-            placeholder="Tên sản phẩm, SKU, barcode"
-            prepend-inner-icon="ri-search-line"
-            :disabled="loading"
-            @keyup.enter="loadProducts"
-          />
-        </VCol>
-        <VCol
-          cols="12"
-          md="4"
+          Quản lý danh mục
+        </VBtn>
+        <VBtn
+          prepend-icon="ri-add-line"
+          @click="openAddProduct"
         >
-          <VSelect
-            v-model="selectedCategory"
-            label="Danh mục"
-            :items="categoryItems"
-            :disabled="loading"
-          />
-        </VCol>
-      </VRow>
-    </VCardText>
+          Thêm sản phẩm
+        </VBtn>
+      </template>
+    </RetailFilterBar>
 
     <VCardText
       v-if="loading"
@@ -339,28 +363,24 @@ onMounted(async () => {
           <th>Sản phẩm</th>
           <th>Barcode</th>
           <th>Danh mục</th>
-          <th class="text-end">
-            Giá nhập
-          </th>
-          <th class="text-end">
-            Giá bán
-          </th>
+          <th class="text-end">Giá nhập</th>
+          <th class="text-end">Giá bán</th>
           <th>Tồn kho</th>
           <th>Trạng thái</th>
-          <th class="text-center">
-            Thao tác
-          </th>
+          <th class="text-center" style="width: 60px;">Thao tác</th>
         </tr>
       </thead>
       <tbody>
         <tr
           v-for="product in visibleProducts"
           :key="product.id"
+          class="hover-row"
+          @click="openEditProduct(product)"
         >
           <td class="font-weight-bold">
             {{ product.code }}
           </td>
-          <td>{{ product.name }}</td>
+          <td class="font-weight-bold text-primary">{{ product.name }}</td>
           <td>{{ product.barcode || '—' }}</td>
           <td>{{ product.categoryName }}</td>
           <td class="text-end">
@@ -370,36 +390,32 @@ onMounted(async () => {
             {{ formatCurrency(product.sellPrice) }}
           </td>
           <td>
-            <RetailStatusChip :status="stockStatus(product)" />
-          </td>
-          <td>
-            <VChip
-              :color="product.isActive ? 'success' : 'error'"
-              size="small"
-              class="cursor-pointer"
-              @click="handleToggleActive(product)"
-            >
-              {{ product.isActive ? 'Đang bán' : 'Ngừng bán' }}
-            </VChip>
-          </td>
-          <td class="text-center">
-            <VBtn
-              icon="ri-edit-line"
-              variant="text"
-              size="small"
-              color="primary"
-              @click="openEditProduct(product)"
+            <RetailStatusBadge
+              :status="stockStatus(product)"
+              dot
             />
           </td>
-        </tr>
-        <tr v-if="!loading && !visibleProducts.length">
+          <td>
+            <RetailStatusBadge
+              :status="product.isActive ? 'Đang bán' : 'Ngừng bán'"
+              dot
+            />
+          </td>
           <td
-            colspan="9"
-            class="text-center text-medium-emphasis py-8"
+            class="text-center"
+            @click.stop
           >
-            Không có sản phẩm phù hợp. Tổng số bản ghi API: {{ totalCount }}.
+            <RetailActionMenu :items="productActions(product)" />
           </td>
         </tr>
+        <RetailEmptyState
+          v-if="!loading && !visibleProducts.length"
+          :colspan="9"
+          icon="ri-barcode-line"
+          title="Không tìm thấy sản phẩm phù hợp"
+          subtitle="Thử nhập từ khóa khác hoặc tạo sản phẩm mới."
+          action-label="Thêm sản phẩm"
+        />
       </tbody>
     </VTable>
   </VCard>

@@ -131,6 +131,8 @@ services:
       DownstreamServices__UserReport: http://user-report-service:80
       Cors__AllowedOrigins__0: http://localhost:8080
       Cors__AllowedOrigins__1: http://127.0.0.1:8080
+      Cors__AllowedOrigins__2: http://localhost:5173
+      Cors__AllowedOrigins__3: http://127.0.0.1:5173
     depends_on:
       - product-inventory-service
       - order-sales-service
@@ -143,7 +145,7 @@ services:
 
   frontend:
     build:
-      context: ./src/Frontend
+      context: ./frontend/typescript-version
       dockerfile: Dockerfile
     container_name: retail_frontend
     depends_on:

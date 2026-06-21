@@ -1,0 +1,140 @@
+/* ============================================
+   RetailOps – Global Design System Overrides
+   ============================================ */
+
+/* ── Panel Card ── */
+.retail-panel-card {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 16px;
+  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
+  transition: box-shadow 220ms ease, border-color 220ms ease;
+}
+
+.retail-panel-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.18);
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.09);
+}
+
+/* ── Data Table ── */
+.retail-table thead th {
+  padding-block: 0.875rem !important;
+  border-block-end: 2px solid rgba(var(--v-theme-primary), 0.12) !important;
+  color: rgba(var(--v-theme-on-surface), 0.72) !important;
+  font-size: 0.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.04em !important;
+  text-transform: uppercase !important;
+}
+
+.retail-table tbody tr {
+  transition: background-color 180ms ease;
+}
+
+.retail-table tbody tr:hover {
+  background-color: rgba(var(--v-theme-primary), 0.04) !important;
+}
+
+.retail-table tbody td {
+  padding-block: 0.75rem !important;
+  border-block-end: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.6)) !important;
+  font-size: 0.8125rem !important;
+}
+
+/* Zebra striping */
+.retail-table tbody tr:nth-child(even) {
+  background-color: rgba(var(--v-theme-on-surface), 0.015);
+}
+
+/* ── Hover Row (clickable rows) ── */
+.hover-row {
+  cursor: pointer;
+}
+
+.hover-row:hover {
+  background-color: rgba(var(--v-theme-primary), 0.06) !important;
+}
+
+/* ── Filter Bar ── */
+.retail-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-block-end: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+}
+
+/* ── Empty State ── */
+.retail-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 3rem 1.5rem;
+  color: rgba(var(--v-theme-on-surface), 0.48);
+  gap: 0.75rem;
+  text-align: center;
+}
+
+.retail-empty-state__icon {
+  opacity: 0.32;
+}
+
+.retail-empty-state__title {
+  color: rgba(var(--v-theme-on-surface), 0.64);
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.retail-empty-state__subtitle {
+  max-inline-size: 420px;
+  color: rgba(var(--v-theme-on-surface), 0.48);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
+/* ── Action Menu ── */
+.retail-action-menu .v-list-item {
+  min-block-size: 36px !important;
+  font-size: 0.8125rem;
+}
+
+/* ── Status Badge Pulse Dot ── */
+@keyframes retail-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.retail-status-dot {
+  display: inline-block;
+  border-radius: 50%;
+  animation: retail-pulse 2s ease-in-out infinite;
+  block-size: 8px;
+  inline-size: 8px;
+}
+
+/* ── Summary Row ── */
+.retail-summary-row {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  margin-block-end: 1.5rem;
+}
+
+/* ── Reduced Motion ── */
+@media (prefers-reduced-motion: reduce) {
+  .retail-panel-card,
+  .retail-table tbody tr,
+  .hover-row {
+    transition: none !important;
+  }
+
+  .retail-status-dot {
+    animation: none;
+  }
+}

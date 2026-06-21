@@ -16,5 +16,6 @@ public class OrderSalesMappingProfile : Profile
                 opt => opt.MapFrom(s => s.CustomerGroup != null ? s.CustomerGroup.Name : null));
 
         CreateMap<Supplier, SupplierDto>();
+        CreateMap<CustomerGroup, CustomerGroupDto>();
     }
 }

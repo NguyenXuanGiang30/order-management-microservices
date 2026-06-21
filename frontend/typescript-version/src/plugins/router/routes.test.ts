@@ -27,4 +27,22 @@ describe('routes', () => {
 
     assert.equal(resolved.matched.some(route => route.meta.public), false)
   })
+
+  it('assigns separate default routes for sales and warehouse workspaces', () => {
+    const router = createTestRouter()
+    const salesRoute = router.resolve('/sales')
+    const warehouseRoute = router.resolve('/warehouse')
+
+    assert.deepEqual(salesRoute.meta.allowedRoles, ['Admin', 'Sales'])
+    assert.deepEqual(warehouseRoute.meta.allowedRoles, ['Admin', 'Warehouse'])
+  })
+
+  it('keeps admin-only routes restricted to admin users', () => {
+    const router = createTestRouter()
+    const dashboardRoute = router.resolve('/dashboard')
+    const settingsRoute = router.resolve('/settings')
+
+    assert.deepEqual(dashboardRoute.meta.allowedRoles, ['Admin'])
+    assert.deepEqual(settingsRoute.meta.allowedRoles, ['Admin'])
+  })
 })

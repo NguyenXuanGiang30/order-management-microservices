@@ -346,3 +346,52 @@ public class GetInventoryTransactionsQueryHandler : IRequestHandler<GetInventory
         return new PagedResponse<InventoryTransactionDto> { Items = items, PageNumber = req.PageNumber, PageSize = req.PageSize, TotalCount = total };
     }
 }
+
+public record ImportedReceiptItemResultDto(Guid ProductId, string ProductCode, string ProductName, string UnitName, int Quantity, decimal ImportPrice);
+
+public record ParseGoodsReceiptCsvQuery(string CsvContent) : IRequest<List<ImportedReceiptItemResultDto>>;
+
+public class ParseGoodsReceiptCsvQueryHandler : IRequestHandler<ParseGoodsReceiptCsvQuery, List<ImportedReceiptItemResultDto>>
+{
+    private readonly IProductInventoryDbContext _ctx;
+
+    public ParseGoodsReceiptCsvQueryHandler(IProductInventoryDbContext ctx)
+    {
+        _ctx = ctx;
+    }
+
+    public async Task<List<ImportedReceiptItemResultDto>> Handle(ParseGoodsReceiptCsvQuery req, CancellationToken ct)
+    {
+        var importedItems = InventoryCsvService.ParseImportedReceiptItems(req.CsvContent);
+        if (importedItems.Count == 0) return [];
+
+        var codes = importedItems.Select(item => item.ProductCode.ToLower()).Distinct().ToList();
+        var products = await _ctx.Products
+            .Include(product => product.Unit)
+            .Where(product => codes.Contains(product.Code.ToLower()))
+            .ToListAsync(ct);
+
+        var productMap = products.ToDictionary(product => product.Code.ToLower(), product => product);
+
+        var results = new List<ImportedReceiptItemResultDto>();
+        foreach (var item in importedItems)
+        {
+            var codeKey = item.ProductCode.ToLower();
+            if (!productMap.TryGetValue(codeKey, out var product))
+            {
+                throw new InvalidOperationException($"Sản phẩm có mã '{item.ProductCode}' không tồn tại trong hệ thống.");
+            }
+
+            results.Add(new ImportedReceiptItemResultDto(
+                product.Id,
+                product.Code,
+                product.Name,
+                product.Unit?.Name ?? "",
+                item.Quantity,
+                item.ImportPrice
+            ));
+        }
+
+        return results;
+    }
+}

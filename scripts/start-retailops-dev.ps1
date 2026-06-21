@@ -50,7 +50,8 @@ function Wait-Port([int]$Port, [int]$TimeoutSeconds = 60) {
 function Start-DotNetService(
   [string]$Name,
   [string]$Project,
-  [int]$Port
+  [int]$Port,
+  [string]$ConnectionString = $null
 ) {
   $existing = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
   if ($existing) {
@@ -63,6 +64,9 @@ function Start-DotNetService(
   $stdout = Join-Path $Logs "$Name.out.log"
   $stderr = Join-Path $Logs "$Name.err.log"
 
+  if ($ConnectionString) {
+    $env:ConnectionStrings__DefaultConnection = $ConnectionString
+  }
   $env:ASPNETCORE_ENVIRONMENT = 'Development'
   $process = Start-Process `
     -FilePath 'dotnet' `
@@ -89,16 +93,35 @@ function Test-Health([string]$Name, [string]$Url) {
 
 Set-Location $Root
 
-Write-Host 'Starting RabbitMQ...'
+Write-Host 'Starting databases and message broker containers...'
 Wait-Docker
-docker compose up -d rabbitmq
+docker compose up -d sqlserver rabbitmq
+Write-Host 'Waiting for SQL Server (1433) and RabbitMQ (5672) to be ready...'
+Wait-Port -Port 1433
 Wait-Port -Port 5672
 
 if (-not $SkipMigrations) {
-  Write-Host 'Applying UserReportService migrations...'
-  dotnet ef database update `
-    --project src\UserReportService\UserReportService.Infrastructure\UserReportService.Infrastructure.csproj `
-    --startup-project src\UserReportService\UserReportService.API\UserReportService.API.csproj
+  Write-Host 'Applying database migrations...'
+  
+  $hasDotNetEf = $null -ne (Get-Command dotnet-ef -ErrorAction SilentlyContinue)
+  if ($hasDotNetEf) {
+    $env:ConnectionStrings__DefaultConnection = 'Server=127.0.0.1;Database=UserReportDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
+    dotnet ef database update `
+      --project src\UserReportService\UserReportService.Infrastructure\UserReportService.Infrastructure.csproj `
+      --startup-project src\UserReportService\UserReportService.API\UserReportService.API.csproj
+
+    $env:ConnectionStrings__DefaultConnection = 'Server=127.0.0.1;Database=ProductInventoryDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
+    dotnet ef database update `
+      --project src\ProductInventoryService\ProductInventoryService.Infrastructure\ProductInventoryService.Infrastructure.csproj `
+      --startup-project src\ProductInventoryService\ProductInventoryService.API\ProductInventoryService.API.csproj
+
+    $env:ConnectionStrings__DefaultConnection = 'Server=127.0.0.1;Database=OrderSalesDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
+    dotnet ef database update `
+      --project src\OrderSalesService\OrderSalesService.Infrastructure\OrderSalesService.Infrastructure.csproj `
+      --startup-project src\OrderSalesService\OrderSalesService.API\OrderSalesService.API.csproj
+  } else {
+    Write-Warning 'dotnet-ef tool is not installed. Database migrations will be applied automatically on application startup.'
+  }
 }
 
 Write-Host 'Building backend services...'
@@ -115,17 +138,20 @@ Start-DotNetService `
 Start-DotNetService `
   -Name 'user-report-service' `
   -Project 'src\UserReportService\UserReportService.API\UserReportService.API.csproj' `
-  -Port 5160
+  -Port 5160 `
+  -ConnectionString 'Server=127.0.0.1;Database=UserReportDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
 
 Start-DotNetService `
   -Name 'product-inventory-service' `
   -Project 'src\ProductInventoryService\ProductInventoryService.API\ProductInventoryService.API.csproj' `
-  -Port 5178
+  -Port 5178 `
+  -ConnectionString 'Server=127.0.0.1;Database=ProductInventoryDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
 
 Start-DotNetService `
   -Name 'order-sales-service' `
   -Project 'src\OrderSalesService\OrderSalesService.API\OrderSalesService.API.csproj' `
-  -Port 5245
+  -Port 5245 `
+  -ConnectionString 'Server=127.0.0.1;Database=OrderSalesDB;User Id=sa;Password=SuperStrong@Password123;TrustServerCertificate=True;'
 
 Start-Sleep -Seconds 3
 

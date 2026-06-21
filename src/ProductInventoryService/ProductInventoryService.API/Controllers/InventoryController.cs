@@ -32,6 +32,33 @@ public class InventoryController : ControllerBase
         return CreatedAtAction(nameof(GetReceipts), ApiResponse<GoodsReceiptDto>.SuccessResponse(result, "Tạo phiếu nhập thành công (Draft)."));
     }
 
+    /// <summary>POST /api/inventory/receipts/import-items — Nhập danh sách mặt hàng từ file CSV</summary>
+    [HttpPost("receipts/import-items")]
+    public async Task<ActionResult<ApiResponse<List<ImportedReceiptItemResultDto>>>> ImportReceiptItems(IFormFile file)
+    {
+        if (file == null || file.Length == 0)
+        {
+            return BadRequest(ApiResponse<List<ImportedReceiptItemResultDto>>.FailResponse("File CSV trống hoặc không tồn tại."));
+        }
+
+        using var reader = new StreamReader(file.OpenReadStream());
+        var csv = await reader.ReadToEndAsync();
+        
+        try
+        {
+            var result = await _mediator.Send(new ParseGoodsReceiptCsvQuery(csv));
+            return Ok(ApiResponse<List<ImportedReceiptItemResultDto>>.SuccessResponse(result, "Nhập danh sách mặt hàng thành công."));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ApiResponse<List<ImportedReceiptItemResultDto>>.FailResponse(ex.Message));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, ApiResponse<List<ImportedReceiptItemResultDto>>.FailResponse($"Đã xảy ra lỗi hệ thống: {ex.Message}"));
+        }
+    }
+
     /// <summary>PUT /api/inventory/receipts/{id}/confirm — Xác nhận phiếu nhập</summary>
     [HttpPut("receipts/{id:guid}/confirm")]
     public async Task<ActionResult<ApiResponse<bool>>> ConfirmReceipt(Guid id)

@@ -1,7 +1,13 @@
 // RetailOps overrides
 .v-card {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 16px;
   box-shadow: none !important;
+}
+
+.v-card-title {
+  font-weight: 800;
+  letter-spacing: -0.015em;
 }
 
 .v-btn {
@@ -18,14 +24,72 @@
 
 .retail-table {
   border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 10px;
+  border-radius: 14px;
+  background: rgb(var(--v-theme-surface));
   overflow: hidden;
+}
+
+.retail-panel-card {
+  overflow: hidden;
+  border-color: rgba(var(--v-theme-primary), 0.12) !important;
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--v-theme-primary), 0.08), transparent 32%),
+    rgb(var(--v-theme-surface));
+}
+
+.retail-panel-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.retail-panel-kicker {
+  color: rgb(var(--v-theme-primary));
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.retail-muted-card {
+  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
+  border-radius: 14px;
+  background: rgba(var(--v-theme-on-surface), 0.025);
+}
+
+.retail-empty-state {
+  display: grid;
+  min-block-size: 180px;
+  place-items: center;
+  padding: 1.5rem;
+  color: rgba(var(--v-theme-on-surface), 0.62);
+  text-align: center;
+}
+
+.workspace-hero-card {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(var(--v-theme-primary), 0.12) !important;
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--v-theme-primary), 0.16), transparent 34%),
+    linear-gradient(135deg, rgba(var(--v-theme-surface), 0.98), rgba(var(--v-theme-surface), 0.88));
+}
+
+.workspace-hero-card::after {
+  position: absolute;
+  border-radius: 999px;
+  background: rgba(var(--v-theme-primary), 0.08);
+  block-size: 180px;
+  content: '';
+  inline-size: 180px;
+  inset-block-end: -90px;
+  inset-inline-end: -60px;
+  pointer-events: none;
 }
 
 .retail-pos-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 380px;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 1fr) 400px;
+  gap: 1.25rem;
 }
 
 .retail-chart {
@@ -41,8 +105,102 @@
   background: linear-gradient(180deg, rgb(var(--v-theme-primary)), rgba(var(--v-theme-primary), 0.55));
 }
 
+.page-enter-active,
+.page-leave-active {
+  transition: opacity 220ms ease, transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.page-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.page-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.workspace-metric-grid > *,
+.workspace-action-grid > * {
+  animation: workspaceFadeUp 0.52s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.workspace-metric-grid > *:nth-child(1),
+.workspace-action-grid > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+
+.workspace-metric-grid > *:nth-child(2),
+.workspace-action-grid > *:nth-child(2) {
+  animation-delay: 100ms;
+}
+
+.workspace-metric-grid > *:nth-child(3),
+.workspace-action-grid > *:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.workspace-metric-grid > *:nth-child(4),
+.workspace-action-grid > *:nth-child(4) {
+  animation-delay: 220ms;
+}
+
+.workspace-action-card {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 100% 0, rgba(var(--v-theme-primary), 0.08), transparent 28%),
+    rgb(var(--v-theme-surface));
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1), border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.workspace-action-card::before {
+  position: absolute;
+  background: rgba(var(--v-theme-primary), 0.4);
+  block-size: 100%;
+  content: '';
+  inline-size: 3px;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  opacity: 0;
+  transition: opacity 220ms ease;
+}
+
+.workspace-action-card:hover {
+  border-color: rgba(var(--v-theme-primary), 0.34);
+  box-shadow: 0 18px 40px rgba(20, 20, 43, 0.12) !important;
+  transform: translateY(-5px);
+}
+
+.workspace-action-card:hover::before {
+  opacity: 1;
+}
+
+@keyframes workspaceFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @media (max-width: 1279px) {
   .retail-pos-shell {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-enter-active,
+  .page-leave-active,
+  .workspace-metric-grid > *,
+  .workspace-action-grid > *,
+  .workspace-action-card {
+    animation: none !important;
+    transition: none !important;
   }
 }

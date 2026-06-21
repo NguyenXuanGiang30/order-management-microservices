@@ -2,6 +2,7 @@ using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderSalesService.Application.Common.Models;
+using OrderSalesService.Application.DTOs;
 using OrderSalesService.Application.Features.CustomerGroups;
 
 namespace OrderSalesService.API.Controllers;

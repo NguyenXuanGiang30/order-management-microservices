@@ -25,3 +25,7 @@ public record SupplierDto(Guid Id, string Code, string Name, string? ContactPers
 
 public record CreateSupplierDto(string Code, string Name, string? ContactPerson,
     string? ContactPhone, string? ContactEmail, string? Address, string? TaxCode, Guid CreatedBy);
+
+// ======================== CustomerGroup DTOs ========================
+public record CustomerGroupDto(Guid Id, string Name, decimal DefaultDiscountPercent, string? Note);
+

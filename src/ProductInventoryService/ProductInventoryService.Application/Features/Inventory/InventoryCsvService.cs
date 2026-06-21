@@ -4,6 +4,7 @@ using System.Text;
 namespace ProductInventoryService.Application.Features.Inventory;
 
 public record ImportedStocktakeCount(Guid? ProductId, string ProductCode, int CountedQuantity, string? Note);
+public record ImportedReceiptItem(string ProductCode, int Quantity, decimal ImportPrice);
 
 public static class InventoryCsvService
 {
@@ -101,6 +102,46 @@ public static class InventoryCsvService
             }
 
             imported.Add(new ImportedStocktakeCount(productId, productCode, countedQuantity, Get(row, noteIndex)));
+        }
+
+        return imported;
+    }
+
+    public static IReadOnlyList<ImportedReceiptItem> ParseImportedReceiptItems(string csvContent)
+    {
+        var rows = ParseRows(csvContent).ToList();
+        if (rows.Count <= 1) return [];
+
+        var header = rows[0].Select(NormalizeHeader).ToList();
+        var productCodeIndex = header.IndexOf("productcode");
+        var quantityIndex = header.IndexOf("quantity");
+        var importPriceIndex = header.IndexOf("importprice");
+
+        if (productCodeIndex < 0 || quantityIndex < 0 || importPriceIndex < 0)
+        {
+            throw new InvalidOperationException("CSV must contain ProductCode, Quantity, and ImportPrice columns.");
+        }
+
+        var imported = new List<ImportedReceiptItem>();
+        foreach (var row in rows.Skip(1))
+        {
+            if (row.Count == 0 || row.All(string.IsNullOrWhiteSpace)) continue;
+
+            var productCode = Get(row, productCodeIndex);
+            var quantityText = Get(row, quantityIndex);
+            var importPriceText = Get(row, importPriceIndex);
+
+            if (!int.TryParse(quantityText, NumberStyles.Integer, CultureInfo.InvariantCulture, out var quantity) || quantity <= 0)
+            {
+                throw new InvalidOperationException($"Invalid Quantity '{quantityText}'. Must be greater than 0.");
+            }
+
+            if (!decimal.TryParse(importPriceText, NumberStyles.Number, CultureInfo.InvariantCulture, out var importPrice) || importPrice < 0)
+            {
+                throw new InvalidOperationException($"Invalid ImportPrice '{importPriceText}'. Cannot be negative.");
+            }
+
+            imported.Add(new ImportedReceiptItem(productCode, quantity, importPrice));
         }
 
         return imported;

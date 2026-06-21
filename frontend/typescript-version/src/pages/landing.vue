@@ -1,4 +1,37 @@
 <script setup lang="ts">
+import { onBeforeUnmount, onMounted, ref } from 'vue'
+
+const isRevealReady = ref(false)
+let revealObserver: IntersectionObserver | null = null
+
+onMounted(() => {
+  isRevealReady.value = true
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+    return
+
+  revealObserver = new IntersectionObserver(entries => {
+    entries.forEach(entry => {
+      if (!entry.isIntersecting)
+        return
+
+      entry.target.classList.add('animate-in')
+      revealObserver?.unobserve(entry.target)
+    })
+  }, {
+    rootMargin: '0px 0px -80px 0px',
+    threshold: 0.12,
+  })
+
+  document.querySelectorAll('.landing-reveal').forEach(element => {
+    revealObserver?.observe(element)
+  })
+})
+
+onBeforeUnmount(() => {
+  revealObserver?.disconnect()
+})
+
 const modules = [
   {
     title: 'POS bán hàng',
@@ -64,7 +97,10 @@ const roles = [
 </script>
 
 <template>
-  <main class="retail-landing">
+  <main
+    class="retail-landing"
+    :class="{ 'reveal-ready': isRevealReady }"
+  >
     <header class="landing-nav">
       <RouterLink
         to="/"
@@ -171,7 +207,10 @@ const roles = [
               subtitle="Kiểm tra tồn kho trước khi bán"
             >
               <template #prepend>
-                <VIcon icon="ri-checkbox-circle-line" color="success" />
+                <VIcon
+                  icon="ri-checkbox-circle-line"
+                  color="success"
+                />
               </template>
             </VListItem>
             <VListItem
@@ -179,7 +218,10 @@ const roles = [
               subtitle="Cộng tồn và cập nhật giá nhập"
             >
               <template #prepend>
-                <VIcon icon="ri-checkbox-circle-line" color="success" />
+                <VIcon
+                  icon="ri-checkbox-circle-line"
+                  color="success"
+                />
               </template>
             </VListItem>
             <VListItem
@@ -187,7 +229,10 @@ const roles = [
               subtitle="Khách hàng và nhà cung cấp"
             >
               <template #prepend>
-                <VIcon icon="ri-time-line" color="warning" />
+                <VIcon
+                  icon="ri-time-line"
+                  color="warning"
+                />
               </template>
             </VListItem>
           </VList>
@@ -195,7 +240,7 @@ const roles = [
       </aside>
     </section>
 
-    <section class="landing-band problem-band">
+    <section class="landing-band problem-band landing-reveal">
       <div>
         <h2>Từ Excel rời rạc sang quy trình có kiểm soát.</h2>
         <p>
@@ -212,7 +257,7 @@ const roles = [
 
     <section
       id="features"
-      class="landing-section"
+      class="landing-section landing-reveal"
     >
       <div class="section-heading">
         <h2>Các phân hệ chính</h2>
@@ -243,7 +288,7 @@ const roles = [
 
     <section
       id="architecture"
-      class="landing-section architecture-section"
+      class="landing-section architecture-section landing-reveal"
     >
       <div class="section-heading">
         <h2>Kiến trúc microservices đúng yêu cầu đề tài</h2>
@@ -253,7 +298,10 @@ const roles = [
       <div class="architecture-flow">
         <VCard class="gateway-card">
           <VCardText>
-            <VIcon icon="ri-route-line" size="28" />
+            <VIcon
+              icon="ri-route-line"
+              size="28"
+            />
             <h3>API Gateway</h3>
             <p>Điểm vào duy nhất, định tuyến request và chuyển tiếp JWT tới service phù hợp.</p>
           </VCardText>
@@ -274,7 +322,7 @@ const roles = [
 
     <section
       id="roles"
-      class="landing-section"
+      class="landing-section landing-reveal"
     >
       <div class="section-heading">
         <h2>Ba vai trò, ba luồng thao tác rõ ràng</h2>
@@ -295,7 +343,7 @@ const roles = [
       </div>
     </section>
 
-    <section class="landing-cta">
+    <section class="landing-cta landing-reveal">
       <div>
         <h2>Sẵn sàng vào workspace RetailOps?</h2>
         <p>Đăng nhập để quản lý bán hàng, kho, công nợ và báo cáo trong app nội bộ.</p>
@@ -541,6 +589,213 @@ const roles = [
   gap: 2rem;
   margin-block: 4rem;
   padding-block: 2rem;
+}
+
+.reveal-ready .landing-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.7s cubic-bezier(0.22, 1, 0.36, 1), transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.reveal-ready .landing-reveal.animate-in {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.landing-nav {
+  animation: landingFadeDown 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.landing-hero {
+  position: relative;
+}
+
+.landing-hero::before,
+.landing-hero::after {
+  content: '';
+  position: absolute;
+  border-radius: 999px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.landing-hero::before {
+  inline-size: 360px;
+  block-size: 360px;
+  inset-block-start: 2rem;
+  inset-inline-end: 8%;
+  background: radial-gradient(circle, rgba(var(--v-theme-primary), 0.14), transparent 68%);
+  animation: landingBlob 18s ease-in-out infinite;
+}
+
+.landing-hero::after {
+  inline-size: 260px;
+  block-size: 260px;
+  inset-block-end: 1rem;
+  inset-inline-start: 4%;
+  background: radial-gradient(circle, rgba(var(--v-theme-success), 0.12), transparent 68%);
+  animation: landingBlob 24s ease-in-out infinite reverse;
+}
+
+.hero-copy,
+.hero-preview {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-copy > * {
+  animation: landingFadeUp 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.hero-copy > *:nth-child(1) {
+  animation-delay: 80ms;
+}
+
+.hero-copy > *:nth-child(2) {
+  animation-delay: 160ms;
+}
+
+.hero-copy > *:nth-child(3) {
+  animation-delay: 240ms;
+}
+
+.hero-preview {
+  animation: landingFloatIn 0.8s cubic-bezier(0.22, 1, 0.36, 1) 220ms both;
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 260ms ease;
+}
+
+.hero-preview:hover {
+  box-shadow: 0 28px 90px rgba(20, 20, 43, 0.18);
+  transform: translateY(-6px);
+}
+
+.feature-card,
+.role-card,
+.service-card,
+.gateway-card,
+.preview-metric,
+.preview-table {
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 240ms ease, box-shadow 240ms ease;
+}
+
+.feature-card:hover,
+.role-card:hover,
+.service-card:hover,
+.gateway-card:hover,
+.preview-metric:hover,
+.preview-table:hover {
+  border-color: rgba(var(--v-theme-primary), 0.3);
+  box-shadow: 0 18px 44px rgba(20, 20, 43, 0.12) !important;
+  transform: translateY(-6px);
+}
+
+.animate-in .feature-card,
+.animate-in .role-card,
+.animate-in .service-card,
+.animate-in .gateway-card {
+  animation: landingFadeUp 0.58s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-in .feature-card:nth-child(2),
+.animate-in .role-card:nth-child(2),
+.animate-in .service-card:nth-child(2) {
+  animation-delay: 80ms;
+}
+
+.animate-in .feature-card:nth-child(3),
+.animate-in .role-card:nth-child(3),
+.animate-in .service-card:nth-child(3) {
+  animation-delay: 160ms;
+}
+
+.animate-in .feature-card:nth-child(4),
+.animate-in .service-card:nth-child(4) {
+  animation-delay: 240ms;
+}
+
+.animate-in .feature-card:nth-child(5) {
+  animation-delay: 320ms;
+}
+
+.animate-in .feature-card:nth-child(6) {
+  animation-delay: 400ms;
+}
+
+@keyframes landingFadeDown {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(24px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes landingFloatIn {
+  from {
+    opacity: 0;
+    transform: translateY(28px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes landingBlob {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+
+  35% {
+    transform: translate(18px, -16px) scale(1.08);
+  }
+
+  70% {
+    transform: translate(-14px, 12px) scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .landing-nav,
+  .hero-copy > *,
+  .hero-preview,
+  .landing-hero::before,
+  .landing-hero::after,
+  .animate-in .feature-card,
+  .animate-in .role-card,
+  .animate-in .service-card,
+  .animate-in .gateway-card {
+    animation: none !important;
+  }
+
+  .reveal-ready .landing-reveal,
+  .feature-card,
+  .role-card,
+  .service-card,
+  .gateway-card,
+  .preview-metric,
+  .preview-table,
+  .hero-preview {
+    opacity: 1;
+    transform: none !important;
+    transition: none !important;
+  }
 }
 
 @media (max-width: 1100px) {

@@ -4,7 +4,16 @@ import DefaultLayoutWithVerticalNav from './components/DefaultLayoutWithVertical
 
 <template>
   <DefaultLayoutWithVerticalNav>
-    <RouterView />
+    <RouterView v-slot="{ Component, route }">
+      <Transition
+        name="page"
+        mode="out-in"
+      >
+        <div :key="route.fullPath">
+          <component :is="Component" />
+        </div>
+      </Transition>
+    </RouterView>
   </DefaultLayoutWithVerticalNav>
 </template>
 
