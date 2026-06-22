@@ -18,6 +18,13 @@ public class PromotionsController : ControllerBase
         _mediator = mediator;
     }
 
+    [HttpGet]
+    public async Task<ActionResult<ApiResponse<List<PromotionDto>>>> GetAll()
+    {
+        var result = await _mediator.Send(new GetPromotionsQuery());
+        return Ok(ApiResponse<List<PromotionDto>>.SuccessResponse(result));
+    }
+
     [HttpGet("active")]
     public async Task<ActionResult<ApiResponse<List<PromotionDto>>>> GetActive()
     {

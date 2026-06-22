@@ -135,6 +135,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<UserReportDbContext>();
         context.Database.Migrate();
+        UserReportService.Infrastructure.Data.DbInitializer.SeedData(context);
     }
     catch (Exception ex)
     {

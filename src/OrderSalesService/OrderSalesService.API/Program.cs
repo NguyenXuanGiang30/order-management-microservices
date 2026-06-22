@@ -115,6 +115,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<OrderSalesDbContext>();
         context.Database.Migrate();
+        DbInitializer.SeedData(context);
     }
     catch (Exception ex)
     {

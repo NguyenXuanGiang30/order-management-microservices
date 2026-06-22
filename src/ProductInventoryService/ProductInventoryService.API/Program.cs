@@ -151,6 +151,7 @@ using (var scope = app.Services.CreateScope())
     {
         var context = services.GetRequiredService<ProductInventoryDbContext>();
         context.Database.Migrate();
+        ProductInventoryService.Infrastructure.Data.DbInitializer.SeedData(context);
     }
     catch (Exception ex)
     {

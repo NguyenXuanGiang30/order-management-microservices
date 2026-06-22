@@ -57,6 +57,29 @@ public class GetActivePromotionsQueryHandler : IRequestHandler<GetActivePromotio
     }
 }
 
+public record GetPromotionsQuery : IRequest<List<PromotionDto>>;
+
+public class GetPromotionsQueryHandler : IRequestHandler<GetPromotionsQuery, List<PromotionDto>>
+{
+    private readonly IOrderSalesDbContext _context;
+
+    public GetPromotionsQueryHandler(IOrderSalesDbContext context)
+    {
+        _context = context;
+    }
+
+    public async Task<List<PromotionDto>> Handle(GetPromotionsQuery request, CancellationToken cancellationToken)
+    {
+        var promotions = await _context.Promotions
+            .Include(p => p.PromotionItems)
+            .AsNoTracking()
+            .OrderByDescending(p => p.CreatedAt)
+            .ToListAsync(cancellationToken);
+
+        return promotions.Select(PromotionMapper.ToDto).ToList();
+    }
+}
+
 public record GetPromotionByCodeQuery(string Code) : IRequest<PromotionDto?>;
 
 public class GetPromotionByCodeQueryHandler : IRequestHandler<GetPromotionByCodeQuery, PromotionDto?>
