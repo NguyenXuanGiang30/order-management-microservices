@@ -14,10 +14,25 @@ public class ProductInventoryMappingProfile : Profile
     {
         // Product → ProductDto (bao gồm thông tin liên kết)
         CreateMap<Product, ProductDto>()
-            .ForMember(d => d.CategoryName, opt => opt.MapFrom(s => s.Category != null ? s.Category.Name : ""))
-            .ForMember(d => d.UnitName, opt => opt.MapFrom(s => s.Unit != null ? s.Unit.Name : ""))
-            .ForMember(d => d.QuantityOnHand, opt => opt.MapFrom(s => s.Inventory != null ? s.Inventory.QuantityOnHand : 0))
-            .ForMember(d => d.QuantityReserved, opt => opt.MapFrom(s => s.Inventory != null ? s.Inventory.QuantityReserved : 0));
+            .ConstructUsing(s => new ProductDto(
+                s.Id,
+                s.Code,
+                s.Name,
+                s.Description,
+                s.Barcode,
+                s.ImportPrice,
+                s.SellPrice,
+                s.ImageUrl,
+                s.Weight,
+                s.CategoryId,
+                s.Category != null ? s.Category.Name : "",
+                s.UnitId,
+                s.Unit != null ? s.Unit.Name : "",
+                s.Inventory != null ? s.Inventory.QuantityOnHand : 0,
+                s.Inventory != null ? s.Inventory.QuantityReserved : 0,
+                s.IsActive,
+                s.CreatedAt
+            ));
 
         // Category mappings
         CreateMap<Category, CategoryDto>();
