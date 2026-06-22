@@ -80,8 +80,8 @@ public static class DbInitializer
                 var inventory = inventories.FirstOrDefault(inv => inv.ProductId == prod.Id);
                 if (inventory != null)
                 {
-                    inventory.Stock += qty;
-                    inventory.UpdatedAt = DateTime.UtcNow;
+                    inventory.QuantityOnHand += qty;
+                    inventory.LastUpdated = DateTime.UtcNow;
                 }
 
                 // Add inventory transaction log
@@ -91,7 +91,7 @@ public static class DbInitializer
                     ProductId = prod.Id,
                     TransactionType = "Import",
                     QuantityChange = qty,
-                    QuantityAfter = (inventory?.Stock ?? 100),
+                    QuantityAfter = (inventory?.QuantityOnHand ?? 100),
                     ReferenceType = "GoodsReceipt",
                     ReferenceId = receipt.Id,
                     Note = "Nhập kho từ phiếu nhập hàng",
