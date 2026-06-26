@@ -44,3 +44,7 @@ pnpm-lock.yaml
 
 # Test results
 test-results/
+
+# Local agent/tooling state
+.worktrees/
+.superpowers/
