@@ -24,6 +24,8 @@ public class OrderSalesDbContext : DbContext, IOrderSalesDbContext
     public DbSet<Promotion> Promotions { get; set; }
     public DbSet<PromotionItem> PromotionItems { get; set; }
     public DbSet<ProcessedEvent> ProcessedEvents { get; set; }
+    public DbSet<CashTransaction> CashTransactions { get; set; }
+    public DbSet<SupplierPayment> SupplierPayments { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -52,6 +54,39 @@ public class OrderSalesDbContext : DbContext, IOrderSalesDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        // =============================================
+        // CASH TRANSACTION (CASH BOOK)
+        // =============================================
+        modelBuilder.Entity<CashTransaction>(entity =>
+        {
+            entity.ToTable("CashTransactions");
+            entity.Property(c => c.TransactionCode).IsRequired().HasMaxLength(50);
+            entity.Property(c => c.Type).IsRequired().HasMaxLength(20);
+            entity.Property(c => c.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(c => c.SourceOrRecipient).IsRequired().HasMaxLength(200);
+            entity.Property(c => c.Category).IsRequired().HasMaxLength(100);
+            entity.Property(c => c.Note).HasMaxLength(500);
+            entity.Property(c => c.CreatedByName).IsRequired().HasMaxLength(100);
+        });
+
+        // =============================================
+        // SUPPLIER PAYMENT
+        // =============================================
+        modelBuilder.Entity<SupplierPayment>(entity =>
+        {
+            entity.ToTable("SupplierPayments");
+            entity.Property(s => s.PaymentCode).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.Amount).HasColumnType("decimal(18,2)");
+            entity.Property(s => s.PaymentMethod).IsRequired().HasMaxLength(50);
+            entity.Property(s => s.Note).HasMaxLength(500);
+            entity.Property(s => s.CreatedByName).IsRequired().HasMaxLength(100);
+
+            entity.HasOne(s => s.Supplier)
+                .WithMany()
+                .HasForeignKey(s => s.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
 
         // =============================================
         // CUSTOMER GROUP

@@ -28,18 +28,24 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
 
     public async Task<CreateOrderResponse> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
     {
-        // Kiểm tra tồn kho trước khi đặt hàng qua StockCache
-        foreach (var item in request.Items)
+        var isDraftOrQuote = string.Equals(request.Status, "Draft", StringComparison.OrdinalIgnoreCase) || 
+                             string.Equals(request.Status, "Quotation", StringComparison.OrdinalIgnoreCase);
+
+        // Kiểm tra tồn kho trước khi đặt hàng qua StockCache (chỉ khi không phải Draft/Quotation)
+        if (!isDraftOrQuote)
         {
-            if (!_stockCache.IsInStock(item.ProductId, item.Quantity))
+            foreach (var item in request.Items)
             {
-                var currentStock = _stockCache.GetStock(item.ProductId);
-                var currentStockStr = currentStock >= 0 ? currentStock.ToString() : "0 (Hết hàng)";
-                
-                throw new ValidationException(new[]
+                if (!_stockCache.IsInStock(item.ProductId, item.Quantity))
                 {
-                    new ValidationFailure(nameof(request.Items), $"Sản phẩm '{item.ProductName}' không đủ tồn kho! Số lượng yêu cầu: {item.Quantity}, Tồn kho hiện hành: {currentStockStr}")
-                });
+                    var currentStock = _stockCache.GetStock(item.ProductId);
+                    var currentStockStr = currentStock >= 0 ? currentStock.ToString() : "0 (Hết hàng)";
+                    
+                    throw new ValidationException(new[]
+                    {
+                        new ValidationFailure(nameof(request.Items), $"Sản phẩm '{item.ProductName}' không đủ tồn kho! Số lượng yêu cầu: {item.Quantity}, Tồn kho hiện hành: {currentStockStr}")
+                    });
+                }
             }
         }
 
@@ -108,6 +114,72 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
         var promotionDiscountAmount = promotionResult?.DiscountAmount ?? 0m;
         var finalAmount = Math.Max(0, totalSubTotal - promotionDiscountAmount);
 
+        var orderStatus = request.Status ?? "Pending";
+        decimal totalPaid = 0;
+        var paymentTransactions = new List<PaymentTransaction>();
+
+        if (!isDraftOrQuote)
+        {
+            if (request.Payments != null && request.Payments.Any())
+            {
+                foreach (var p in request.Payments)
+                {
+                    if (p.Amount > 0)
+                    {
+                        totalPaid += p.Amount;
+                        paymentTransactions.Add(new PaymentTransaction
+                        {
+                            PaymentMethod = p.PaymentMethod,
+                            Amount = p.Amount,
+                            Note = p.Note,
+                            CustomerId = request.CustomerId,
+                            ReceivedBy = request.CreatedBy,
+                            ReceivedByName = request.CreatedByName,
+                            PaymentDate = DateTime.UtcNow
+                        });
+                    }
+                }
+            }
+            else if (!string.IsNullOrEmpty(request.PaymentMethod) && !string.Equals(request.PaymentMethod, "Ghi nợ", StringComparison.OrdinalIgnoreCase))
+            {
+                totalPaid = finalAmount;
+                paymentTransactions.Add(new PaymentTransaction
+                {
+                    PaymentMethod = request.PaymentMethod,
+                    Amount = finalAmount,
+                    Note = "Thanh toán khi tạo đơn hàng",
+                    CustomerId = request.CustomerId,
+                    ReceivedBy = request.CreatedBy,
+                    ReceivedByName = request.CreatedByName,
+                    PaymentDate = DateTime.UtcNow
+                });
+            }
+        }
+
+        var debtAmount = Math.Max(0, finalAmount - totalPaid);
+
+        if (!isDraftOrQuote)
+        {
+            if (debtAmount <= 0)
+            {
+                orderStatus = "Paid";
+            }
+            else if (totalPaid > 0)
+            {
+                orderStatus = "PartialPaid";
+            }
+            else
+            {
+                orderStatus = "Pending";
+            }
+        }
+
+        var paymentMethodName = request.PaymentMethod;
+        if (request.Payments != null && request.Payments.Any())
+        {
+            paymentMethodName = string.Join(", ", request.Payments.Select(p => p.PaymentMethod).Distinct());
+        }
+
         var order = new Order
         {
             OrderCode = orderCode, CustomerId = request.CustomerId, CustomerName = request.CustomerName,
@@ -115,50 +187,62 @@ public class CreateOrderCommandHandler : IRequestHandler<CreateOrderCommand, Cre
             SubTotal = totalSubTotal, DiscountPercent = 0, DiscountAmount = 0,
             PromotionId = promotion?.Id, PromotionCode = promotion?.Code, PromotionName = promotion?.Name,
             PromotionDiscountAmount = promotionDiscountAmount, FinalAmount = finalAmount,
-            PaidAmount = 0, DebtAmount = finalAmount, PaymentMethod = request.PaymentMethod,
-            Status = "Pending", Note = request.Note, OrderDetails = details
+            PaidAmount = totalPaid, DebtAmount = debtAmount, PaymentMethod = paymentMethodName,
+            Status = orderStatus, Note = request.Note, OrderDetails = details
         };
 
         _context.Orders.Add(order);
 
+        foreach (var pt in paymentTransactions)
+        {
+            pt.OrderId = order.Id;
+            _context.PaymentTransactions.Add(pt);
+        }
+
         _context.OrderStatusHistories.Add(new OrderStatusHistory
         {
-            OrderId = order.Id, OldStatus = "", NewStatus = "Pending",
-            Note = "Đơn hàng mới được tạo.", ChangedBy = request.CreatedBy,
+            OrderId = order.Id, OldStatus = "", NewStatus = orderStatus,
+            Note = $"Đơn hàng mới được tạo dưới dạng {orderStatus}.", ChangedBy = request.CreatedBy,
             ChangedByName = request.CreatedByName, CreatedAt = DateTime.UtcNow
         });
 
-        var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == request.CustomerId, cancellationToken);
-        if (customer != null)
+        if (!isDraftOrQuote)
         {
-            customer.TotalPurchased += order.FinalAmount;
-            customer.DebtAmount += order.DebtAmount;
+            var customer = await _context.Customers.FirstOrDefaultAsync(c => c.Id == request.CustomerId, cancellationToken);
+            if (customer != null)
+            {
+                customer.TotalPurchased += order.FinalAmount;
+                customer.DebtAmount += order.DebtAmount;
+            }
         }
 
         await _context.SaveChangesAsync(cancellationToken);
 
-        // Publish OrderCreatedEvent bất đồng bộ để trừ kho và làm báo cáo
-        var orderCreatedEvent = new OrderCreatedEvent
+        if (!isDraftOrQuote)
         {
-            OrderId = order.Id,
-            OrderCode = order.OrderCode,
-            CustomerId = order.CustomerId,
-            CustomerName = order.CustomerName,
-            FinalAmount = order.FinalAmount,
-            OrderDate = order.OrderDate,
-            Items = order.OrderDetails.Select(item => new OrderCreatedItem
+            // Publish OrderCreatedEvent bất đồng bộ để trừ kho và làm báo cáo
+            var orderCreatedEvent = new OrderCreatedEvent
             {
-                ProductId = item.ProductId,
-                ProductCode = item.ProductCode,
-                ProductName = item.ProductName,
-                Quantity = item.Quantity,
-                UnitPrice = item.UnitPrice,
-                CostPrice = item.CostPrice,
-                CostTotal = item.CostTotal,
-                SubTotal = item.SubTotal
-            }).ToList()
-        };
-        await _publishEndpoint.Publish(orderCreatedEvent, cancellationToken);
+                OrderId = order.Id,
+                OrderCode = order.OrderCode,
+                CustomerId = order.CustomerId,
+                CustomerName = order.CustomerName,
+                FinalAmount = order.FinalAmount,
+                OrderDate = order.OrderDate,
+                Items = order.OrderDetails.Select(item => new OrderCreatedItem
+                {
+                    ProductId = item.ProductId,
+                    ProductCode = item.ProductCode,
+                    ProductName = item.ProductName,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    CostPrice = item.CostPrice,
+                    CostTotal = item.CostTotal,
+                    SubTotal = item.SubTotal
+                }).ToList()
+            };
+            await _publishEndpoint.Publish(orderCreatedEvent, cancellationToken);
+        }
         await _publishEndpoint.Publish(new AuditLoggedEvent
         {
             UserId = request.CreatedBy,

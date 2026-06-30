@@ -26,6 +26,8 @@ export interface DashboardReport {
   today: DailySalesSummary | null
   last7Days: DailySalesSummary[]
   currentMonth: MonthlySalesSummary | null
+  previousMonth?: MonthlySalesSummary | null
+  last14Days?: DailySalesSummary[] | null
 }
 
 export interface TopProductDto {
@@ -125,43 +127,54 @@ export const getMonthlyProfit = (
   client.get<MonthlyProfitDto[]>('/api/reports/profit/monthly', {
     query: compactQuery({ year }),
   })
-
 export const getProductProfit = (
-  params: { search?: string; page?: number; pageSize?: number } = {},
+  params: { year?: number; month?: number; limit?: number; pageSize?: number } = {},
   client: ReportsApiClient = apiClient,
 ) =>
-  client.get<PagedResponse<ProductProfitDto>>('/api/reports/profit/products', {
+  client.get<ProductProfitDto[]>('/api/reports/profit/products', {
     query: compactQuery({
-      search: params.search,
-      page: params.page ?? 1,
-      pageSize: params.pageSize ?? 20,
+      year: params.year,
+      month: params.month,
+      limit: params.limit ?? params.pageSize ?? 20,
     }),
   })
 
 export const getDailyReports = (
-  params: { from?: string; to?: string; page?: number; pageSize?: number } = {},
+  params: { from?: string; to?: string } = {},
   client: ReportsApiClient = apiClient,
 ) =>
-  client.get<PagedResponse<DailySalesSummary>>('/api/reports/daily', {
+  client.get<DailySalesSummary[]>('/api/reports/daily', {
     query: compactQuery({
       from: params.from,
       to: params.to,
-      page: params.page ?? 1,
-      pageSize: params.pageSize ?? 20,
     }),
   })
 
 export const getMonthlyReports = (
   year?: number,
-  page?: number,
-  pageSize?: number,
   client: ReportsApiClient = apiClient,
 ) =>
-  client.get<PagedResponse<MonthlySalesSummary>>('/api/reports/monthly', {
+  client.get<MonthlySalesSummary[]>('/api/reports/monthly', {
     query: compactQuery({
       year,
-      page: page ?? 1,
-      pageSize: pageSize ?? 20,
+    }),
+  })
+export interface StaffPerformanceDto {
+  staffId: string
+  staffName: string
+  totalOrders: number
+  totalRevenue: number
+  averageOrderValue: number
+}
+
+export const getStaffPerformance = (
+  params: { from?: string; to?: string } = {},
+  client: ReportsApiClient = apiClient,
+) =>
+  client.get<StaffPerformanceDto[]>('/api/orders/reports/staff-performance', {
+    query: compactQuery({
+      from: params.from,
+      to: params.to,
     }),
   })
 
@@ -170,3 +183,4 @@ function compactQuery(query: Record<string, unknown>) {
     Object.entries(query).filter(([, value]) => value !== undefined && value !== null && value !== ''),
   )
 }
+

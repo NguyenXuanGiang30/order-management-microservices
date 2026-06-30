@@ -79,9 +79,9 @@ public class InventoryController : ControllerBase
 
     /// <summary>GET /api/inventory/stock — Xem tồn kho</summary>
     [HttpGet("stock")]
-    public async Task<ActionResult<ApiResponse<List<StockDto>>>> GetStock([FromQuery] bool? belowMin, [FromQuery] string? search)
+    public async Task<ActionResult<ApiResponse<List<StockDto>>>> GetStock([FromQuery] bool? belowMin, [FromQuery] string? search, [FromQuery] bool? aboveMax)
     {
-        var result = await _mediator.Send(new GetStockQuery(belowMin, search));
+        var result = await _mediator.Send(new GetStockQuery(belowMin, search, aboveMax));
         return Ok(ApiResponse<List<StockDto>>.SuccessResponse(result));
     }
 
@@ -96,9 +96,9 @@ public class InventoryController : ControllerBase
     }
 
     [HttpGet("stock/export")]
-    public async Task<IActionResult> ExportStock([FromQuery] bool? belowMin, [FromQuery] string? search)
+    public async Task<IActionResult> ExportStock([FromQuery] bool? belowMin, [FromQuery] string? search, [FromQuery] bool? aboveMax)
     {
-        var stock = await _mediator.Send(new GetStockQuery(belowMin, search));
+        var stock = await _mediator.Send(new GetStockQuery(belowMin, search, aboveMax));
         var bytes = InventoryCsvService.ToUtf8BomBytes(InventoryCsvService.ToStockCsv(stock));
         return File(bytes, "text/csv; charset=utf-8", $"inventory-stock-{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
     }
@@ -110,6 +110,23 @@ public class InventoryController : ControllerBase
         var result = await _mediator.Send(new GetInventoryTransactionsQuery(productId, type, from, 1, 10000));
         var bytes = InventoryCsvService.ToUtf8BomBytes(InventoryCsvService.ToTransactionsCsv(result.Items));
         return File(bytes, "text/csv; charset=utf-8", $"inventory-transactions-{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
+    }
+
+    [HttpGet("balance-report")]
+    public async Task<ActionResult<ApiResponse<List<ProductInventoryService.Application.DTOs.InventoryBalanceReportDto>>>> GetBalanceReport(
+        [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate, [FromQuery] string? search)
+    {
+        var result = await _mediator.Send(new GetInventoryBalanceReportQuery(startDate, endDate, search));
+        return Ok(ApiResponse<List<ProductInventoryService.Application.DTOs.InventoryBalanceReportDto>>.SuccessResponse(result));
+    }
+
+    [HttpGet("balance-report/export")]
+    public async Task<IActionResult> ExportBalanceReport(
+        [FromQuery] DateTime? startDate, [FromQuery] DateTime? endDate, [FromQuery] string? search)
+    {
+        var result = await _mediator.Send(new GetInventoryBalanceReportQuery(startDate, endDate, search));
+        var bytes = InventoryCsvService.ToUtf8BomBytes(InventoryCsvService.ToBalanceReportCsv(result));
+        return File(bytes, "text/csv; charset=utf-8", $"inventory-balance-report-{DateTime.UtcNow:yyyyMMddHHmmss}.csv");
     }
 
     [HttpGet("stocktakes")]
@@ -181,5 +198,12 @@ public class InventoryController : ControllerBase
         if (result == null) return NotFound(ApiResponse<StocktakeSessionDto>.FailResponse("Stocktake session not found or not editable."));
 
         return Ok(ApiResponse<StocktakeSessionDto>.SuccessResponse(result, "Stocktake counts imported."));
+    }
+
+    [HttpPost("export")]
+    public async Task<ActionResult<ApiResponse<bool>>> InternalStockExport([FromBody] InternalStockExportCommand command)
+    {
+        var result = await _mediator.Send(command);
+        return Ok(ApiResponse<bool>.SuccessResponse(result, "Xuất kho nội bộ thành công. Tồn kho đã được cập nhật."));
     }
 }

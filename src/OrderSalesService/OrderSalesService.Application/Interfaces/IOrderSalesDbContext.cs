@@ -18,6 +18,8 @@ public interface IOrderSalesDbContext
     DbSet<Promotion> Promotions { get; set; }
     DbSet<PromotionItem> PromotionItems { get; set; }
     DbSet<ProcessedEvent> ProcessedEvents { get; set; }
+    DbSet<CashTransaction> CashTransactions { get; set; }
+    DbSet<SupplierPayment> SupplierPayments { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

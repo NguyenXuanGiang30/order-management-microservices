@@ -23,6 +23,8 @@ var tests = new List<(string Name, Action Test)>
     ("calculates cash shift closing variance", CalculatesCashShiftClosingVariance),
     ("applies confirmed goods receipt to supplier debt", AppliesConfirmedGoodsReceiptToSupplierDebt),
     ("calculates order line cost snapshot", CalculatesOrderLineCostSnapshot),
+    ("applies BuyXGetY promotion when both items in cart", AppliesBuyXGetYPromotion),
+    ("calculates split payment balances correctly", CalculatesSplitPaymentBalances),
 };
 
 foreach (var test in tests)
@@ -358,4 +360,88 @@ static void AssertThrows<TException>(Action action) where TException : Exception
     }
 
     throw new InvalidOperationException($"Expected exception {typeof(TException).Name} was not thrown.");
+}
+
+static void AppliesBuyXGetYPromotion()
+{
+    var buyProductId = Guid.Parse("50000000-0000-0000-0000-000000000001");
+    var getProductId = Guid.Parse("60000000-0000-0000-0000-000000000002");
+    
+    var promotion = NewPromotion("BuyXGetY", "Percent", 100m); // Buy X get Y 100% off (free)
+    promotion.PromotionItems.Add(new PromotionItem
+    {
+        ProductId = buyProductId,
+        ProductCode = "SP001",
+        ProductName = "Sản phẩm mua A",
+        RequiredQuantity = 2 // Buy 2
+    });
+    promotion.PromotionItems.Add(new PromotionItem
+    {
+        ProductId = getProductId,
+        ProductCode = "SP002",
+        ProductName = "Sản phẩm tặng B",
+        RequiredQuantity = 1 // Get 1
+    });
+
+    var result = PromotionPolicy.Calculate(
+        promotion,
+        new[]
+        {
+            NewPromotionLine(buyProductId.ToString(), 5, 100_000m), // Buy 5 units of A at 100k each (subTotal = 500k)
+            NewPromotionLine(getProductId.ToString(), 2, 50_000m)   // Get 2 units of B in cart at 50k each (subTotal = 100k)
+        },
+        ActivePromotionNow());
+
+    // Buy 5 units of A, requirement is Buy 2 -> multiplier = 5/2 = 2.
+    // Gift capacity = 2 * 1 = 2. actualGiftQty in cart = 2.
+    // Discount is 2 * 50k = 100k.
+    AssertEqual(100_000m, result.DiscountAmount, nameof(result.DiscountAmount));
+    AssertEqual(100_000m, result.EligibleAmount, nameof(result.EligibleAmount));
+}
+
+static void CalculatesSplitPaymentBalances()
+{
+    var order = NewOrder(finalAmount: 500_000m, paidAmount: 0m);
+    var customer = NewCustomer(debtAmount: 500_000m);
+
+    var paymentsList = new List<(string Method, decimal Amount)>
+    {
+        ("Tiền mặt", 200_000m),
+        ("Chuyển khoản", 300_000m)
+    };
+
+    decimal totalPaid = 0;
+    var paymentTransactions = new List<PaymentTransaction>();
+    foreach (var p in paymentsList)
+    {
+        totalPaid += p.Amount;
+        paymentTransactions.Add(new PaymentTransaction
+        {
+            OrderId = order.Id,
+            CustomerId = order.CustomerId,
+            Amount = p.Amount,
+            PaymentMethod = p.Method,
+            PaymentDate = DateTime.UtcNow
+        });
+    }
+
+    order.PaidAmount = totalPaid;
+    order.DebtAmount = Math.Max(0, order.FinalAmount - totalPaid);
+    order.PaymentMethod = string.Join(", ", paymentsList.Select(x => x.Method).Distinct());
+    
+    if (order.DebtAmount <= 0)
+    {
+        order.Status = "Paid";
+        order.DebtAmount = 0;
+    }
+    else if (order.PaidAmount > 0)
+    {
+        order.Status = "PartialPaid";
+    }
+
+    AssertEqual(500_000m, order.PaidAmount, nameof(order.PaidAmount));
+    AssertEqual(0m, order.DebtAmount, nameof(order.DebtAmount));
+    AssertEqual("Paid", order.Status, nameof(order.Status));
+    AssertEqual("Tiền mặt, Chuyển khoản", order.PaymentMethod, nameof(order.PaymentMethod));
+    AssertEqual(2, paymentTransactions.Count, nameof(paymentTransactions.Count));
 }

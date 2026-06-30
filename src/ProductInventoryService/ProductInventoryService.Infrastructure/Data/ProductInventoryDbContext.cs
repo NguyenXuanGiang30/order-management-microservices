@@ -25,6 +25,8 @@ public class ProductInventoryDbContext : DbContext, IProductInventoryDbContext
     public DbSet<StocktakeSession> StocktakeSessions { get; set; }
     public DbSet<StocktakeLine> StocktakeLines { get; set; }
     public DbSet<ProcessedEvent> ProcessedEvents { get; set; }
+    public DbSet<UnitConversion> UnitConversions { get; set; }
+    public DbSet<ProductPriceHistory> ProductPriceHistories { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -45,6 +47,56 @@ public class ProductInventoryDbContext : DbContext, IProductInventoryDbContext
                 entity.UpdatedAt = DateTime.UtcNow;
                 entry.Property(nameof(AuditableEntity.CreatedAt)).IsModified = false;
             }
+        }
+
+        // Track price changes
+        var priceChanges = new List<ProductPriceHistory>();
+        var modifiedProducts = ChangeTracker.Entries<Product>()
+            .Where(e => e.State == EntityState.Modified);
+
+        foreach (var entry in modifiedProducts)
+        {
+            var oldImportPrice = entry.OriginalValues[nameof(Product.ImportPrice)] is decimal val1 ? val1 : 0m;
+            var newImportPrice = entry.Entity.ImportPrice;
+
+            var oldSellPrice = entry.OriginalValues[nameof(Product.SellPrice)] is decimal val2 ? val2 : 0m;
+            var newSellPrice = entry.Entity.SellPrice;
+
+            if (oldImportPrice != newImportPrice || oldSellPrice != newSellPrice)
+            {
+                priceChanges.Add(new ProductPriceHistory
+                {
+                    ProductId = entry.Entity.Id,
+                    OldImportPrice = oldImportPrice,
+                    NewImportPrice = newImportPrice,
+                    OldSellPrice = oldSellPrice,
+                    NewSellPrice = newSellPrice,
+                    ChangedBy = "Admin",
+                    CreatedAt = DateTime.UtcNow
+                });
+            }
+        }
+
+        var addedProducts = ChangeTracker.Entries<Product>()
+            .Where(e => e.State == EntityState.Added);
+
+        foreach (var entry in addedProducts)
+        {
+            priceChanges.Add(new ProductPriceHistory
+            {
+                ProductId = entry.Entity.Id,
+                OldImportPrice = 0,
+                NewImportPrice = entry.Entity.ImportPrice,
+                OldSellPrice = 0,
+                NewSellPrice = entry.Entity.SellPrice,
+                ChangedBy = "Admin",
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        if (priceChanges.Any())
+        {
+            await ProductPriceHistories.AddRangeAsync(priceChanges, cancellationToken);
         }
 
         return await base.SaveChangesAsync(cancellationToken);
@@ -228,6 +280,52 @@ public class ProductInventoryDbContext : DbContext, IProductInventoryDbContext
             entity.HasKey(p => p.EventId);
             entity.Property(p => p.EventId).HasMaxLength(100);
             entity.Property(p => p.ConsumerName).IsRequired().HasMaxLength(200);
+        });
+
+        // =============================================
+        // UNIT CONVERSION - Quy đổi đơn vị tính
+        // =============================================
+        modelBuilder.Entity<UnitConversion>(entity =>
+        {
+            entity.ToTable("UnitConversions");
+            entity.Property(u => u.Factor).HasColumnType("decimal(18,4)");
+
+            entity.HasOne(u => u.Product)
+                .WithMany()
+                .HasForeignKey(u => u.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(u => u.FromUnit)
+                .WithMany()
+                .HasForeignKey(u => u.FromUnitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne(u => u.ToUnit)
+                .WithMany()
+                .HasForeignKey(u => u.ToUnitId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasIndex(u => new { u.ProductId, u.FromUnitId, u.ToUnitId })
+                .IsUnique()
+                .HasDatabaseName("IX_UnitConversions_Product_From_To");
+        });
+
+        // =============================================
+        // PRODUCT PRICE HISTORY
+        // =============================================
+        modelBuilder.Entity<ProductPriceHistory>(entity =>
+        {
+            entity.ToTable("ProductPriceHistories");
+            entity.Property(p => p.OldImportPrice).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.NewImportPrice).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.OldSellPrice).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.NewSellPrice).HasColumnType("decimal(18,2)");
+            entity.Property(p => p.ChangedBy).HasMaxLength(100);
+
+            entity.HasOne(p => p.Product)
+                .WithMany()
+                .HasForeignKey(p => p.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
 
         // =============================================

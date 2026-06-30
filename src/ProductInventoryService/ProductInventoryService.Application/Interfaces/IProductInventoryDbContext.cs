@@ -19,6 +19,8 @@ public interface IProductInventoryDbContext
     DbSet<StocktakeSession> StocktakeSessions { get; set; }
     DbSet<StocktakeLine> StocktakeLines { get; set; }
     DbSet<ProcessedEvent> ProcessedEvents { get; set; }
+    DbSet<UnitConversion> UnitConversions { get; set; }
+    DbSet<ProductPriceHistory> ProductPriceHistories { get; set; }
 
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

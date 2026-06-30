@@ -4,45 +4,51 @@
 
 /* ── Panel Card ── */
 .retail-panel-card {
-  border: 1px solid rgba(var(--v-border-color), var(--v-border-opacity));
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(15, 23, 42, 0.06);
-  transition: box-shadow 220ms ease, border-color 220ms ease;
+  border: 1px solid rgba(var(--v-border-color), 0.12) !important;
+  border-radius: 22px !important;
+  background: linear-gradient(145deg, rgba(var(--v-theme-surface), 0.96), rgba(var(--v-theme-surface), 0.84)) !important;
+  box-shadow: 0 18px 52px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.12) !important;
+  overflow: hidden !important;
+  transition: box-shadow 220ms ease, border-color 220ms ease, transform 220ms ease !important;
 }
 
 .retail-panel-card:hover {
-  border-color: rgba(var(--v-theme-primary), 0.18);
-  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.09);
+  border-color: rgba(var(--v-theme-primary), 0.18) !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
 }
 
 /* ── Data Table ── */
 .retail-table thead th {
+  block-size: 54px !important;
   padding-block: 0.875rem !important;
   border-block-end: 2px solid rgba(var(--v-theme-primary), 0.12) !important;
-  color: rgba(var(--v-theme-on-surface), 0.72) !important;
-  font-size: 0.75rem !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.04em !important;
+  color: rgba(var(--v-theme-on-surface), 0.68) !important;
+  font-size: 0.76rem !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.035em !important;
   text-transform: uppercase !important;
+  background: rgba(var(--v-theme-background), 0.72) !important;
 }
 
 .retail-table tbody tr {
-  transition: background-color 180ms ease;
+  transition: background-color 160ms ease !important;
 }
 
 .retail-table tbody tr:hover {
-  background-color: rgba(var(--v-theme-primary), 0.04) !important;
+  background-color: rgba(var(--v-theme-primary), 0.045) !important;
 }
 
 .retail-table tbody td {
+  block-size: 58px !important;
   padding-block: 0.75rem !important;
   border-block-end: 1px solid rgba(var(--v-border-color), calc(var(--v-border-opacity) * 0.6)) !important;
+  color: rgba(var(--v-theme-on-surface), 0.82) !important;
   font-size: 0.8125rem !important;
 }
 
 /* Zebra striping */
 .retail-table tbody tr:nth-child(even) {
-  background-color: rgba(var(--v-theme-on-surface), 0.015);
+  background-color: rgba(var(--v-theme-on-surface), 0.015) !important;
 }
 
 /* ── Hover Row (clickable rows) ── */
@@ -136,5 +142,82 @@
 
   .retail-status-dot {
     animation: none;
+  }
+}
+
+/* ── Page Header Redesign Override ── */
+.retail-page-header {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 2rem !important;
+  border: 1px solid rgba(var(--v-border-color), 0.14) !important;
+  border-radius: 28px !important;
+  padding: clamp(1.4rem, 3vw, 2.2rem) !important;
+  margin-block-end: 1.5rem !important;
+  background: linear-gradient(145deg, rgba(var(--v-theme-surface), 0.92), rgba(var(--v-theme-surface), 0.72)), rgba(var(--v-theme-surface), 0.78) !important;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.16) !important;
+  backdrop-filter: blur(18px) !important;
+}
+
+.retail-page-header__content {
+  display: flex !important;
+  flex-direction: column !important;
+}
+
+.retail-page-header__eyebrow {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 0.45rem !important;
+  border: 1px solid rgba(var(--v-theme-primary), 0.22) !important;
+  border-radius: 999px !important;
+  padding: 0.4rem 0.8rem !important;
+  color: rgb(var(--v-theme-primary)) !important;
+  background: rgba(var(--v-theme-primary), 0.08) !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  margin-block-end: 0.75rem !important;
+  align-self: flex-start !important;
+}
+
+.retail-page-header h1 {
+  margin: 0 !important;
+  color: rgb(var(--v-theme-on-surface)) !important;
+  font-size: clamp(1.85rem, 3vw, 2.45rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.04em !important;
+  line-height: 1.1 !important;
+}
+
+.retail-page-header p {
+  max-inline-size: 720px !important;
+  margin: 0.75rem 0 0 !important;
+  color: rgba(var(--v-theme-on-surface), 0.68) !important;
+  font-size: 0.96rem !important;
+  line-height: 1.6 !important;
+}
+
+.retail-page-header__actions {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+}
+
+.retail-page-header__actions .v-btn {
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+}
+
+@media (max-width: 767px) {
+  .retail-page-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 1.25rem !important;
+  }
+
+  .retail-page-header__actions {
+    justify-content: flex-start !important;
   }
 }

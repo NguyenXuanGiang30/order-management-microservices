@@ -36,7 +36,7 @@ export const routes = [
       {
         path: 'dashboard',
         component: () => import('@/pages/dashboard.vue'),
-        meta: { allowedRoles: ADMIN_ROLES },
+        meta: { allowedRoles: ['Admin', 'Sales', 'Warehouse'] },
       },
       {
         path: 'sales',
@@ -59,6 +59,21 @@ export const routes = [
         meta: { allowedRoles: SALES_ROLES },
       },
       {
+        path: 'returns',
+        component: () => import('@/pages/returns.vue'),
+        meta: { allowedRoles: SALES_ROLES },
+      },
+      {
+        path: 'shifts',
+        component: () => import('@/pages/shifts.vue'),
+        meta: { allowedRoles: SALES_ROLES },
+      },
+      {
+        path: 'cashbook',
+        component: () => import('@/pages/cashbook.vue'),
+        meta: { allowedRoles: SALES_ROLES },
+      },
+      {
         path: 'products',
         component: () => import('@/pages/products.vue'),
         meta: { allowedRoles: WAREHOUSE_ROLES },
@@ -74,6 +89,31 @@ export const routes = [
         meta: { allowedRoles: WAREHOUSE_ROLES },
       },
       {
+        path: 'stock-take',
+        component: () => import('@/pages/stock-take.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
+        path: 'inventory-transactions',
+        component: () => import('@/pages/inventory-transactions.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
+        path: 'nxt-report',
+        component: () => import('@/pages/nxt-report.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
+        path: 'units',
+        component: () => import('@/pages/units.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
+        path: 'internal-stock-export',
+        component: () => import('@/pages/internal-stock-export.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
         path: 'customers',
         component: () => import('@/pages/customers.vue'),
         meta: { allowedRoles: SALES_ROLES },
@@ -81,6 +121,11 @@ export const routes = [
       {
         path: 'suppliers',
         component: () => import('@/pages/suppliers.vue'),
+        meta: { allowedRoles: WAREHOUSE_ROLES },
+      },
+      {
+        path: 'supplier-payments',
+        component: () => import('@/pages/supplier-payments.vue'),
         meta: { allowedRoles: WAREHOUSE_ROLES },
       },
       {
@@ -96,6 +141,11 @@ export const routes = [
       {
         path: 'settings',
         component: () => import('@/pages/settings.vue'),
+        meta: { allowedRoles: ADMIN_ROLES },
+      },
+      {
+        path: 'activity-logs',
+        component: () => import('@/pages/activity-logs.vue'),
         meta: { allowedRoles: ADMIN_ROLES },
       },
       {

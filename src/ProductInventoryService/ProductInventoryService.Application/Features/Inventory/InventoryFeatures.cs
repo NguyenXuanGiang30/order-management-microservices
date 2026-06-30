@@ -17,7 +17,7 @@ public record StockDto(Guid ProductId, string ProductCode, string ProductName, s
     int AvailableQuantity, int MinThreshold, int MaxThreshold, bool IsBelowMin, string AlertLevel, int ReorderQuantity,
     int RecommendedOrderQuantity, string StockCoverageLabel);
 
-public record InventoryTransactionDto(Guid Id, Guid ProductId, string ProductName, string TransactionType, int QuantityChange,
+public record InventoryTransactionDto(Guid Id, Guid ProductId, string ProductCode, string ProductName, string TransactionType, int QuantityChange,
     int QuantityAfter, string ReferenceType, Guid? ReferenceId, string? Note, DateTime CreatedAt);
 
 public record CreateGoodsReceiptItemDto(Guid ProductId, int Quantity, decimal UnitPrice);
@@ -261,7 +261,7 @@ public class CancelGoodsReceiptCommandHandler : IRequestHandler<CancelGoodsRecei
     }
 }
 
-public record GetStockQuery(bool? BelowMin, string? Search) : IRequest<List<StockDto>>;
+public record GetStockQuery(bool? BelowMin, string? Search, bool? AboveMax) : IRequest<List<StockDto>>;
 
 public class GetStockQueryHandler : IRequestHandler<GetStockQuery, List<StockDto>>
 {
@@ -283,6 +283,11 @@ public class GetStockQueryHandler : IRequestHandler<GetStockQuery, List<StockDto
         if (req.BelowMin == true)
         {
             q = q.Where(i => i.QuantityOnHand - i.QuantityReserved < i.MinThreshold);
+        }
+
+        if (req.AboveMax == true)
+        {
+            q = q.Where(i => i.QuantityOnHand > i.MaxThreshold && i.MaxThreshold > 0);
         }
 
         if (!string.IsNullOrWhiteSpace(req.Search))
@@ -339,7 +344,7 @@ public class GetInventoryTransactionsQueryHandler : IRequestHandler<GetInventory
         var items = await q.OrderByDescending(t => t.CreatedAt)
             .Skip((req.PageNumber - 1) * req.PageSize)
             .Take(req.PageSize)
-            .Select(t => new InventoryTransactionDto(t.Id, t.ProductId, t.Product.Name, t.TransactionType, t.QuantityChange,
+            .Select(t => new InventoryTransactionDto(t.Id, t.ProductId, t.Product.Code, t.Product.Name, t.TransactionType, t.QuantityChange,
                 t.QuantityAfter, t.ReferenceType, t.ReferenceId, t.Note, t.CreatedAt))
             .ToListAsync(ct);
 
@@ -395,3 +400,91 @@ public class ParseGoodsReceiptCsvQueryHandler : IRequestHandler<ParseGoodsReceip
         return results;
     }
 }
+
+public record ExportItemDto(Guid ProductId, int Quantity, string? Note);
+
+public record InternalStockExportCommand(Guid CreatedBy, string CreatedByName, List<ExportItemDto> Items) : IRequest<bool>;
+
+public class InternalStockExportCommandHandler : IRequestHandler<InternalStockExportCommand, bool>
+{
+    private readonly IProductInventoryDbContext _ctx;
+    private readonly IPublishEndpoint _publishEndpoint;
+
+    public InternalStockExportCommandHandler(IProductInventoryDbContext ctx, IPublishEndpoint publishEndpoint)
+    {
+        _ctx = ctx;
+        _publishEndpoint = publishEndpoint;
+    }
+
+    public async Task<bool> Handle(InternalStockExportCommand req, CancellationToken ct)
+    {
+        if (req.Items == null || req.Items.Count == 0)
+        {
+            throw new InvalidOperationException("Danh sách mặt hàng xuất không được để trống.");
+        }
+
+        var productIds = req.Items.Select(item => item.ProductId).Distinct().ToList();
+        var products = await _ctx.Products.Where(p => productIds.Contains(p.Id)).ToDictionaryAsync(p => p.Id, ct);
+
+        foreach (var item in req.Items)
+        {
+            if (item.Quantity <= 0) throw new InvalidOperationException("Số lượng xuất phải lớn hơn 0.");
+            if (!products.ContainsKey(item.ProductId)) throw new InvalidOperationException($"Sản phẩm có ID {item.ProductId} không tồn tại.");
+        }
+
+        var refId = Guid.NewGuid();
+        var refCode = $"XK-{DateTime.UtcNow:yyyyMMddHHmmssfff}";
+
+        foreach (var item in req.Items)
+        {
+            var inventory = await _ctx.Inventories.FirstOrDefaultAsync(i => i.ProductId == item.ProductId, ct);
+            if (inventory == null || inventory.QuantityOnHand < item.Quantity)
+            {
+                throw new InvalidOperationException($"Sản phẩm {products[item.ProductId].Name} không đủ tồn kho để xuất. Tồn hiện tại: {inventory?.QuantityOnHand ?? 0}");
+            }
+
+            inventory.QuantityOnHand -= item.Quantity;
+            inventory.LastUpdated = DateTime.UtcNow;
+
+            _ctx.InventoryTransactions.Add(new InventoryTransaction
+            {
+                ProductId = item.ProductId,
+                TransactionType = "Export",
+                QuantityChange = -item.Quantity,
+                QuantityAfter = inventory.QuantityOnHand,
+                ReferenceType = "Manual",
+                ReferenceId = refId,
+                Note = $"[{refCode}] {item.Note ?? "Xuất kho nội bộ"}",
+                CreatedBy = req.CreatedBy,
+                CreatedAt = DateTime.UtcNow
+            });
+
+            await _publishEndpoint.Publish(new InventoryUpdatedEvent
+            {
+                ProductId = item.ProductId,
+                ProductCode = products[item.ProductId].Code,
+                QuantityChange = -item.Quantity,
+                NewQuantityOnHand = inventory.QuantityOnHand,
+                Reason = $"Internal Export ({item.Note ?? "Manual"})",
+                UpdatedAt = DateTime.UtcNow
+            }, ct);
+        }
+
+        await _ctx.SaveChangesAsync(ct);
+
+        await _publishEndpoint.Publish(new AuditLoggedEvent
+        {
+            UserId = req.CreatedBy,
+            ServiceName = "ProductInventoryService",
+            Action = "InternalStockExport",
+            EntityType = "InventoryTransaction",
+            EntityId = refId.ToString(),
+            Severity = "Info",
+            Description = $"Xuất kho nội bộ {refCode} bởi {req.CreatedByName}.",
+            CreatedAt = DateTime.UtcNow
+        }, ct);
+
+        return true;
+    }
+}
+

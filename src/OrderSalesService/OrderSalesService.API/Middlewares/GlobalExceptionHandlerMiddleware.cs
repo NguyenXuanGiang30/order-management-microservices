@@ -10,6 +10,8 @@ public class GlobalExceptionHandlerMiddleware
     private readonly ILogger<GlobalExceptionHandlerMiddleware> _logger;
     public GlobalExceptionHandlerMiddleware(RequestDelegate next, ILogger<GlobalExceptionHandlerMiddleware> logger) { _next = next; _logger = logger; }
 
+    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNamingPolicy = JsonNamingPolicy.CamelCase };
+
     public async Task InvokeAsync(HttpContext context)
     {
         try { await _next(context); }
@@ -19,20 +21,20 @@ public class GlobalExceptionHandlerMiddleware
             context.Response.StatusCode = (int)HttpStatusCode.BadRequest;
             context.Response.ContentType = "application/json";
             var errors = ex.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }).ToList();
-            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = "Dữ liệu không hợp lệ.", Errors = errors }));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = "Dữ liệu không hợp lệ.", Errors = errors }, JsonOptions));
         }
         catch (KeyNotFoundException ex)
         {
             context.Response.StatusCode = (int)HttpStatusCode.NotFound;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = ex.Message }));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = ex.Message }, JsonOptions));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Unhandled exception");
             context.Response.StatusCode = (int)HttpStatusCode.InternalServerError;
             context.Response.ContentType = "application/json";
-            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = "Đã xảy ra lỗi hệ thống." }));
+            await context.Response.WriteAsync(JsonSerializer.Serialize(new { Success = false, Message = "Đã xảy ra lỗi hệ thống." }, JsonOptions));
         }
     }
 }

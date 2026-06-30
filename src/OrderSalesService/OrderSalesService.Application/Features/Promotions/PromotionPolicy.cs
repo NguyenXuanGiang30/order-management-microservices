@@ -90,6 +90,37 @@ public static class PromotionPolicy
                 .Sum(line => line.SubTotal);
         }
 
+        if (string.Equals(promotion.PromotionType, "BuyXGetY", StringComparison.OrdinalIgnoreCase))
+        {
+            if (promotion.PromotionItems.Count < 2)
+            {
+                throw new InvalidOperationException("Khuyen mai BuyXGetY phai co it nhat 2 san pham (san pham mua va san pham tang).");
+            }
+
+            var itemsList = promotion.PromotionItems.ToList();
+            var buyItem = itemsList[0];
+            var getItem = itemsList[1];
+
+            var buyLine = lines.FirstOrDefault(item => item.ProductId == buyItem.ProductId);
+            var getLine = lines.FirstOrDefault(item => item.ProductId == getItem.ProductId);
+
+            if (buyLine == null || buyLine.Quantity < buyItem.RequiredQuantity)
+            {
+                throw new InvalidOperationException($"Chua du so luong san pham mua yeu cau ({buyItem.ProductName}).");
+            }
+
+            if (getLine == null || getLine.Quantity < getItem.RequiredQuantity)
+            {
+                throw new InvalidOperationException($"Chua du so luong san pham tang yeu cau ({getItem.ProductName}).");
+            }
+
+            var multiplier = buyLine.Quantity / buyItem.RequiredQuantity;
+            var actualGiftQty = Math.Min(multiplier * getItem.RequiredQuantity, getLine.Quantity);
+            var giftUnitPrice = getLine.SubTotal / getLine.Quantity;
+
+            return actualGiftQty * giftUnitPrice;
+        }
+
         throw new InvalidOperationException("Loai khuyen mai khong hop le.");
     }
 

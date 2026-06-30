@@ -59,7 +59,7 @@ export function createApiClient(options: ApiClientOptions = {}) {
       ...requestOptions.headers,
     }
 
-    if (body !== undefined)
+    if (body !== undefined && !(body instanceof FormData))
       headers['Content-Type'] = 'application/json'
 
     if (session?.accessToken)
@@ -68,10 +68,10 @@ export function createApiClient(options: ApiClientOptions = {}) {
     const response = await fetcher(buildUrl(path, options.baseUrl, requestOptions.query), {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
     })
 
-    const responseBody = await readResponse<ApiResponse<T>>(response)
+    const responseBody = await readResponse<any>(response)
 
     if (response.status === 401 && session?.refreshToken && !hasRetried) {
       try {
@@ -98,15 +98,33 @@ export function createApiClient(options: ApiClientOptions = {}) {
       }
     }
 
-    if (!response.ok || !responseBody.success) {
+    const isSuccess = responseBody?.success ?? responseBody?.Success ?? false
+    const msg = responseBody?.message ?? responseBody?.Message
+    const errs = responseBody?.errors ?? responseBody?.Errors ?? []
+    const data = responseBody?.data ?? responseBody?.Data
+
+    if (!response.ok || !isSuccess) {
+      let detailedMsg = msg
+      if (Array.isArray(errs) && errs.length > 0) {
+        const errorStrings = errs.map((e: any) => {
+          if (typeof e === 'string') return e
+          const errMsg = e.errorMessage ?? e.ErrorMessage ?? e.message ?? e.Message
+          const propName = e.propertyName ?? e.PropertyName
+          return propName ? `${propName}: ${errMsg}` : errMsg
+        }).filter(Boolean)
+        if (errorStrings.length > 0) {
+          detailedMsg = errorStrings.join('\n')
+        }
+      }
+
       throw new ApiClientError(
-        responseBody.message || 'Không thể tải dữ liệu từ máy chủ.',
+        detailedMsg || 'Không thể tải dữ liệu từ máy chủ.',
         response.status,
-        responseBody.errors ?? [],
+        errs,
       )
     }
 
-    return responseBody.data as T
+    return data as T
   }
 
   return {

@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using ProductInventoryService.Application.DTOs;
 
 namespace ProductInventoryService.Application.Features.Inventory;
 
@@ -32,12 +33,13 @@ public static class InventoryCsvService
 
     public static string ToTransactionsCsv(IEnumerable<InventoryTransactionDto> rows)
     {
-        var builder = NewBuilder("Id,ProductId,ProductName,TransactionType,QuantityChange,QuantityAfter,ReferenceType,ReferenceId,Note,CreatedAt");
+        var builder = NewBuilder("Id,ProductId,ProductCode,ProductName,TransactionType,QuantityChange,QuantityAfter,ReferenceType,ReferenceId,Note,CreatedAt");
         foreach (var row in rows)
         {
             builder.AppendLine(JoinCsv(
                 row.Id.ToString(),
                 row.ProductId.ToString(),
+                row.ProductCode,
                 row.ProductName,
                 row.TransactionType,
                 row.QuantityChange.ToString(CultureInfo.InvariantCulture),
@@ -46,6 +48,25 @@ public static class InventoryCsvService
                 row.ReferenceId?.ToString() ?? "",
                 row.Note ?? "",
                 row.CreatedAt.ToString("O", CultureInfo.InvariantCulture)));
+        }
+
+        return builder.ToString();
+    }
+
+    public static string ToBalanceReportCsv(IEnumerable<InventoryBalanceReportDto> rows)
+    {
+        var builder = NewBuilder("ProductId,ProductCode,ProductName,UnitName,OpeningStock,ReceivedQuantity,ShippedQuantity,ClosingStock");
+        foreach (var row in rows)
+        {
+            builder.AppendLine(JoinCsv(
+                row.ProductId.ToString(),
+                row.ProductCode,
+                row.ProductName,
+                row.UnitName,
+                row.OpeningStock.ToString(CultureInfo.InvariantCulture),
+                row.ReceivedQuantity.ToString(CultureInfo.InvariantCulture),
+                row.ShippedQuantity.ToString(CultureInfo.InvariantCulture),
+                row.ClosingStock.ToString(CultureInfo.InvariantCulture)));
         }
 
         return builder.ToString();

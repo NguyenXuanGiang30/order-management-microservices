@@ -29,3 +29,10 @@ public record CreateSupplierDto(string Code, string Name, string? ContactPerson,
 // ======================== CustomerGroup DTOs ========================
 public record CustomerGroupDto(Guid Id, string Name, decimal DefaultDiscountPercent, string? Note);
 
+// ======================== Return Order DTOs ========================
+public record ReturnOrderDto(Guid Id, string ReturnCode, Guid OrderId, string OrderCode, string CustomerName, decimal TotalRefundAmount, string? ReturnReason, string Status, DateTime CreatedAt, List<ReturnOrderDetailDto> ReturnOrderDetails);
+public record ReturnOrderDetailDto(Guid Id, Guid OrderDetailId, string ProductCode, string ProductName, string UnitName, decimal UnitPrice, int ReturnQuantity, decimal RefundAmount);
+
+public record StaffPerformanceDto(Guid StaffId, string StaffName, int TotalOrders, decimal TotalRevenue, decimal AverageOrderValue);
+
+

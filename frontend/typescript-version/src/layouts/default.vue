@@ -6,7 +6,7 @@ import DefaultLayoutWithVerticalNav from './components/DefaultLayoutWithVertical
   <DefaultLayoutWithVerticalNav>
     <RouterView v-slot="{ Component, route }">
       <Transition
-        name="page"
+        name="page-fade"
         mode="out-in"
       >
         <div :key="route.fullPath">
@@ -20,4 +20,15 @@ import DefaultLayoutWithVerticalNav from './components/DefaultLayoutWithVertical
 <style lang="scss">
 // As we are using `layouts` plugin we need its styles to be imported
 @use "@layouts/styles/default-layout";
+
+.page-fade-enter-active,
+.page-fade-leave-active {
+  transition: opacity 180ms ease, transform 180ms ease;
+}
+
+.page-fade-enter-from,
+.page-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
 </style>

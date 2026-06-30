@@ -9,6 +9,28 @@ public static class DbInitializer
 {
     public static void SeedData(OrderSalesDbContext context)
     {
+        // Đảm bảo luôn có Khách vãng lai
+        var guestCustomer = context.Customers.FirstOrDefault(c => c.Code == "KHL");
+        if (guestCustomer == null)
+        {
+            guestCustomer = new Customer
+            {
+                Id = Guid.Parse("d0000000-1111-2222-3333-444455556666"),
+                Code = "KHL",
+                FullName = "Khách vãng lai",
+                Phone = "0999999999",
+                Email = "retail@system.com",
+                Address = "Tại quầy",
+                CustomerGroupId = Guid.Parse("c24f74d1-55b2-4d2a-8742-5f657a8a25c1"), // Khách Lẻ
+                TotalPurchased = 0m,
+                DebtAmount = 0m,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            context.Customers.Add(guestCustomer);
+            context.SaveChanges();
+        }
+
         if (context.Orders.Any())
         {
             return;

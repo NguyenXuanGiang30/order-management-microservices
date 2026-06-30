@@ -89,6 +89,58 @@ namespace OrderSalesService.Infrastructure.Migrations
                     b.ToTable("CashShifts", (string)null);
                 });
 
+            modelBuilder.Entity("OrderSalesService.Application.Models.CashTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<Guid?>("ReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("SourceOrRecipient")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("TransactionCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("CashTransactions", (string)null);
+                });
+
             modelBuilder.Entity("OrderSalesService.Application.Models.Customer", b =>
                 {
                     b.Property<Guid>("Id")
@@ -884,6 +936,59 @@ namespace OrderSalesService.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("OrderSalesService.Application.Models.SupplierPayment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("CreatedByName")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Note")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PaymentCode")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime>("PaymentDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("PaymentMethod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId");
+
+                    b.ToTable("SupplierPayments", (string)null);
+                });
+
             modelBuilder.Entity("OrderSalesService.Application.Models.Customer", b =>
                 {
                     b.HasOne("OrderSalesService.Application.Models.CustomerGroup", "CustomerGroup")
@@ -977,6 +1082,17 @@ namespace OrderSalesService.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ReturnOrder");
+                });
+
+            modelBuilder.Entity("OrderSalesService.Application.Models.SupplierPayment", b =>
+                {
+                    b.HasOne("OrderSalesService.Application.Models.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("OrderSalesService.Application.Models.Customer", b =>

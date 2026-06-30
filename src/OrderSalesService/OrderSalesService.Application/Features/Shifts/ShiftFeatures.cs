@@ -109,7 +109,24 @@ public class CloseCashShiftCommandHandler : IRequestHandler<CloseCashShiftComman
                 p.PaymentDate <= closedAt)
             .SumAsync(p => p.Amount, cancellationToken);
 
-        var closing = CashShiftCalculator.CalculateClosing(shift.OpeningCash, cashPayments, request.ActualCash);
+        var cashReceipts = await _context.CashTransactions
+            .Where(c =>
+                c.CreatedBy == request.CashierId &&
+                c.Type == "Receipt" &&
+                c.CreatedAt >= shift.OpenedAt &&
+                c.CreatedAt <= closedAt)
+            .SumAsync(c => c.Amount, cancellationToken);
+
+        var cashPaymentsOut = await _context.CashTransactions
+            .Where(c =>
+                c.CreatedBy == request.CashierId &&
+                c.Type == "Payment" &&
+                c.CreatedAt >= shift.OpenedAt &&
+                c.CreatedAt <= closedAt)
+            .SumAsync(c => c.Amount, cancellationToken);
+
+        var totalCashInflow = cashPayments + cashReceipts - cashPaymentsOut;
+        var closing = CashShiftCalculator.CalculateClosing(shift.OpeningCash, totalCashInflow, request.ActualCash);
 
         shift.ClosedAt = closedAt;
         shift.ExpectedCash = closing.ExpectedCash;

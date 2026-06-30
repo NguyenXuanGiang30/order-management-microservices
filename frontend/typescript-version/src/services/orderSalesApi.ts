@@ -109,6 +109,12 @@ export interface CreateOrderItemPayload {
   discountPercent: number
 }
 
+export interface CreatePaymentTransactionPayload {
+  paymentMethod: string
+  amount: number
+  note?: string | null
+}
+
 export interface CreateOrderPayload {
   customerId: string
   customerName: string
@@ -118,6 +124,8 @@ export interface CreateOrderPayload {
   promotionCode: string | null
   note: string | null
   items: CreateOrderItemPayload[]
+  status?: string
+  payments?: CreatePaymentTransactionPayload[] | null
 }
 
 export interface CreateOrderResponse {
@@ -133,9 +141,8 @@ export interface CreateOrderResponse {
 export interface CustomerGroupDto {
   id: string
   name: string
-  description: string | null
-  discountPercent: number
-  createdAt: string
+  note: string | null
+  defaultDiscountPercent: number
 }
 
 export interface CustomerDetailDto extends CustomerDto {
@@ -227,12 +234,66 @@ export const cancelOrder = (
 ) =>
   client.put<boolean>(`/api/orders/${id}/cancel`)
 
-export const returnOrderItems = (
+export const confirmOrder = (
   id: string,
-  payload: { items: Array<{ productId: string; quantity: number; note?: string | null }> },
+  payload: { paymentMethod?: string; paidAmount: number; payments?: CreatePaymentTransactionPayload[] | null },
   client: Pick<OrderSalesApiClient, 'post'> = apiClient,
 ) =>
-  client.post<OrderDto>(`/api/orders/${id}/return`, payload)
+  client.post<boolean>(`/api/orders/${id}/confirm`, payload)
+
+export interface ReturnOrderDetailDto {
+  id: string
+  orderDetailId: string
+  productCode: string
+  productName: string
+  unitName: string
+  unitPrice: number
+  returnQuantity: number
+  refundAmount: number
+}
+
+export interface ReturnOrderDto {
+  id: string
+  returnCode: string
+  orderId: string
+  orderCode: string
+  customerName: string
+  totalRefundAmount: number
+  returnReason: string | null
+  status: string
+  createdAt: string
+  returnOrderDetails: ReturnOrderDetailDto[]
+}
+
+export interface ReturnOrderRequest {
+  returnReason: string
+  items: Array<{ orderDetailId: string; returnQuantity: number }>
+}
+
+export interface ReturnOrderResultDto {
+  returnOrderId: string
+  returnCode: string
+  totalRefundAmount: number
+}
+
+export const returnOrderItems = (
+  id: string,
+  payload: ReturnOrderRequest,
+  client: Pick<OrderSalesApiClient, 'post'> = apiClient,
+) =>
+  client.post<ReturnOrderResultDto>(`/api/orders/${id}/return`, payload)
+
+export const getReturnOrders = (
+  params: { search?: string; page?: number; pageSize?: number } = {},
+  client: Pick<OrderSalesApiClient, 'get'> = apiClient,
+) =>
+  client.get<PagedResponse<ReturnOrderDto>>('/api/orders/returns', {
+    query: compactQuery({
+      search: params.search,
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 20,
+    }),
+  })
 
 export const getOrderInvoice = (
   id: string,
@@ -289,14 +350,14 @@ export const getCustomerGroups = (
   client.get<CustomerGroupDto[]>('/api/customer-groups')
 
 export const createCustomerGroup = (
-  payload: { name: string; description?: string | null; discountPercent: number },
+  payload: { name: string; note?: string | null; defaultDiscountPercent: number },
   client: Pick<OrderSalesApiClient, 'post'> = apiClient,
 ) =>
   client.post<CustomerGroupDto>('/api/customer-groups', payload)
 
 export const updateCustomerGroup = (
   id: string,
-  payload: { name: string; description?: string | null; discountPercent: number },
+  payload: { name: string; note?: string | null; defaultDiscountPercent: number },
   client: Pick<OrderSalesApiClient, 'put'> = apiClient,
 ) =>
   client.put<CustomerGroupDto>(`/api/customer-groups/${id}`, payload)
@@ -477,6 +538,83 @@ export const getPayments = (
       pageSize: params.pageSize ?? 20,
     }),
   })
+
+export interface CashTransactionDto {
+  id: string
+  transactionCode: string
+  type: string
+  amount: number
+  sourceOrRecipient: string
+  category: string
+  referenceId: string | null
+  note: string | null
+  createdByName: string
+  createdAt: string
+}
+
+export interface CashBookBalanceDto {
+  totalReceipts: number
+  totalPayments: number
+  currentBalance: number
+}
+
+export const getCashTransactions = (
+  params: { search?: string; type?: string; category?: string; page?: number; pageSize?: number } = {},
+  client: Pick<OrderSalesApiClient, 'get'> = apiClient,
+) =>
+  client.get<PagedResponse<CashTransactionDto>>('/api/cashbook', {
+    query: compactQuery({
+      search: params.search,
+      type: params.type,
+      category: params.category,
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 20,
+    }),
+  })
+
+export const getCashBookBalance = (
+  client: Pick<OrderSalesApiClient, 'get'> = apiClient,
+) =>
+  client.get<CashBookBalanceDto>('/api/cashbook/balance')
+
+export const createCashTransaction = (
+  payload: { type: string; amount: number; sourceOrRecipient: string; category: string; note?: string | null },
+  client: Pick<OrderSalesApiClient, 'post'> = apiClient,
+) =>
+  client.post<CashTransactionDto>('/api/cashbook', payload)
+
+export interface SupplierPaymentDto {
+  id: string
+  paymentCode: string
+  supplierId: string
+  supplierName: string
+  supplierCode: string
+  amount: number
+  paymentMethod: string
+  paymentDate: string
+  note: string | null
+  createdBy: string
+  createdByName: string
+}
+
+export const getSupplierPayments = (
+  params: { search?: string; supplierId?: string; page?: number; pageSize?: number },
+  client: Pick<OrderSalesApiClient, 'get'> = apiClient,
+) =>
+  client.get<PagedResponse<SupplierPaymentDto>>('/api/supplierpayments', {
+    query: compactQuery({
+      search: params.search,
+      supplierId: params.supplierId,
+      page: params.page ?? 1,
+      pageSize: params.pageSize ?? 20,
+    }),
+  })
+
+export const createSupplierPayment = (
+  payload: { supplierId: string; amount: number; paymentMethod: string; note?: string | null },
+  client: Pick<OrderSalesApiClient, 'post'> = apiClient,
+) =>
+  client.post<SupplierPaymentDto>('/api/supplierpayments', payload)
 
 function compactQuery(query: Record<string, unknown>) {
   return Object.fromEntries(

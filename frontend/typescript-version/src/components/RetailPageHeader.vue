@@ -21,10 +21,10 @@ defineProps<{
         />
         <span>{{ eyebrow }}</span>
       </div>
-      <h1 class="text-h4 text-md-h3 font-weight-bold mb-2">
+      <h1>
         {{ title }}
       </h1>
-      <p class="text-body-1 text-medium-emphasis mb-0">
+      <p>
         {{ subtitle }}
       </p>
     </div>

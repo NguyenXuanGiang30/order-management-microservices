@@ -3,7 +3,7 @@ namespace UserReportService.Application.DTOs;
 public record UserDto(Guid Id, string Username, string FullName, string? Email, string? Phone, string? AvatarUrl, string Role, IReadOnlyList<string> Permissions, DateTime? LastLoginAt, bool IsActive, DateTime CreatedAt);
 public record DailySalesSummaryDto(Guid Id, DateTime ReportDate, int TotalOrders, decimal TotalRevenue, decimal TotalDiscount, int TotalItemsSold, int TotalNewCustomers);
 public record MonthlySalesSummaryDto(Guid Id, int Year, int Month, int TotalOrders, decimal TotalRevenue, decimal TotalDiscount, int TotalItemsSold, int TotalNewCustomers);
-public record DashboardDto(DailySalesSummaryDto? Today, List<DailySalesSummaryDto> Last7Days, MonthlySalesSummaryDto? CurrentMonth);
+public record DashboardDto(DailySalesSummaryDto? Today, List<DailySalesSummaryDto> Last7Days, MonthlySalesSummaryDto? CurrentMonth, MonthlySalesSummaryDto? PreviousMonth = null, List<DailySalesSummaryDto>? Last14Days = null);
 
 // Reports DTOs
 public record TopProductDto(Guid ProductId, string ProductCode, string ProductName, int TotalQuantitySold, decimal TotalRevenue);

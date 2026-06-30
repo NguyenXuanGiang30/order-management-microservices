@@ -214,6 +214,17 @@ export const restoreBackup = (
 ) =>
   client.post<BackupRecordDto>(`/api/backups/${backupId}/restore`, payload)
 
+export interface ChangePasswordPayload {
+  oldPassword: string
+  newPassword: string
+}
+
+export const changePassword = (
+  payload: ChangePasswordPayload,
+  client: Pick<AdminApiClient, 'put'> = apiClient,
+) =>
+  client.put<any>('/api/auth/change-password', payload)
+
 export const getActivityLogs = (
   params: GetActivityLogsParams = {},
   client: Pick<AdminApiClient, 'get'> = apiClient,

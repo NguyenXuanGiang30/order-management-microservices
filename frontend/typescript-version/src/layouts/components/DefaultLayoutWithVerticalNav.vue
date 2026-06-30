@@ -5,6 +5,8 @@ import NavItems from '@/layouts/components/NavItems.vue'
 import Footer from '@/layouts/components/Footer.vue'
 import NavbarThemeSwitcher from '@/layouts/components/NavbarThemeSwitcher.vue'
 import UserProfile from '@/layouts/components/UserProfile.vue'
+import NotificationMenu from '@/layouts/components/NotificationMenu.vue'
+import ServiceStatus from '@/layouts/components/ServiceStatus.vue'
 import { useAuthStore } from '@/stores/auth'
 import VerticalNavLayout from '@layouts/components/VerticalNavLayout.vue'
 
@@ -64,14 +66,8 @@ const searchPlaceholder = computed(() => {
           {{ workspaceLabel }}
         </VChip>
 
-        <IconBtn class="navbar-icon-btn">
-          <VBadge
-            dot
-            color="error"
-          >
-            <VIcon icon="ri-notification-line" />
-          </VBadge>
-        </IconBtn>
+        <ServiceStatus />
+        <NotificationMenu />
 
         <NavbarThemeSwitcher class="me-2" />
         <UserProfile />

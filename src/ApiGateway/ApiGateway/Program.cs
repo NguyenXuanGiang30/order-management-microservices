@@ -40,7 +40,46 @@ app.MapGet("/", () => Results.Ok(new
     }
 }));
 
-app.MapGet("/health", () => Results.Ok(new { status = "healthy", service = "api-gateway" }));
+app.MapGet("/health", async (IHttpClientFactory httpClientFactory) =>
+{
+    var client = httpClientFactory.CreateClient("gateway-proxy");
+    var services = new Dictionary<string, object>();
+    var overallHealthy = true;
+
+    services.Add("ApiGateway", new { status = "Healthy", url = "Self" });
+
+    async Task CheckDownstream(string name, string baseUrl)
+    {
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(2));
+            var response = await client.GetAsync($"{baseUrl}/health", cts.Token);
+            if (response.IsSuccessStatusCode)
+            {
+                services.Add(name, new { status = "Healthy", url = baseUrl });
+            }
+            else
+            {
+                overallHealthy = false;
+                services.Add(name, new { status = "Unhealthy", error = $"Status code: {response.StatusCode}", url = baseUrl });
+            }
+        }
+        catch (Exception ex)
+        {
+            overallHealthy = false;
+            services.Add(name, new { status = "Unhealthy", error = ex.Message, url = baseUrl });
+        }
+    }
+
+    await CheckDownstream("ProductInventoryService", downstream.ProductInventory);
+    await CheckDownstream("OrderSalesService", downstream.OrderSales);
+    await CheckDownstream("UserReportService", downstream.UserReport);
+
+    return overallHealthy
+        ? Results.Ok(new { status = "Healthy", services })
+        : Results.Json(new { status = "Unhealthy", services }, statusCode: 503);
+});
+
 
 app.MapMethods("/{**path}", ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], async (
     HttpContext context,
@@ -77,6 +116,8 @@ static string? ResolveTargetBaseUrl(PathString path, DownstreamServices downstre
 {
     if (path.StartsWithSegments("/vqr", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/orders", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/api/cashbook", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/api/supplierpayments", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/customers", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/customer-groups", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/suppliers", StringComparison.OrdinalIgnoreCase) ||
@@ -90,6 +131,7 @@ static string? ResolveTargetBaseUrl(PathString path, DownstreamServices downstre
     if (path.StartsWithSegments("/api/products", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/categories", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/inventory", StringComparison.OrdinalIgnoreCase) ||
+        path.StartsWithSegments("/api/unitconversions", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/api/units", StringComparison.OrdinalIgnoreCase) ||
         path.StartsWithSegments("/internal", StringComparison.OrdinalIgnoreCase))
     {

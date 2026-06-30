@@ -48,3 +48,10 @@ test-results/
 # Local agent/tooling state
 .worktrees/
 .superpowers/
+.agents/
+skills-lock.json
+cloudflared.exe
+
+# Temp folders
+impeccable_temp/
+impeccable_clone/

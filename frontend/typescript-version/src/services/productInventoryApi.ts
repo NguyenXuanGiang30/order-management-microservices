@@ -56,6 +56,7 @@ export interface GetProductsParams {
 export interface GetInventoryStockParams {
   belowMin?: boolean
   search?: string
+  aboveMax?: boolean
 }
 
 export interface CategoryDto {
@@ -174,6 +175,7 @@ export const getInventoryStock = (
     query: compactQuery({
       belowMin: params.belowMin,
       search: params.search,
+      aboveMax: params.aboveMax,
     }),
   })
 
@@ -342,3 +344,139 @@ function compactQuery(query: Record<string, unknown>) {
     Object.entries(query).filter(([, value]) => value !== undefined && value !== null && value !== ''),
   )
 }
+
+export interface UnitDto {
+  id: string
+  name: string
+  abbreviation: string | null
+  isActive: boolean
+}
+
+export const getUnits = (
+  client: Pick<ProductInventoryApiClient, 'get'> = apiClient,
+) =>
+  client.get<UnitDto[]>('/api/units')
+
+export const createUnit = (
+  payload: { name: string; abbreviation?: string | null },
+  client: Pick<ProductInventoryApiClient, 'post'> = apiClient,
+) =>
+  client.post<UnitDto>('/api/units', payload)
+
+export interface ExportItemDto {
+  productId: string
+  quantity: number
+  note: string | null
+}
+
+export interface InternalStockExportCommand {
+  createdBy: string
+  createdByName: string
+  items: ExportItemDto[]
+}
+
+export const internalStockExport = (
+  payload: InternalStockExportCommand,
+  client: Pick<ProductInventoryApiClient, 'post'> = apiClient,
+) =>
+  client.post<boolean>('/api/inventory/export', payload)
+
+export interface UnitConversionDto {
+  id: string
+  productId: string
+  productName: string
+  fromUnitId: string
+  fromUnitName: string
+  toUnitId: string
+  toUnitName: string
+  factor: number
+}
+
+export const getUnitConversions = (
+  params: { productId?: string } = {},
+  client: Pick<ProductInventoryApiClient, 'get'> = apiClient,
+) =>
+  client.get<UnitConversionDto[]>('/api/unitconversions', {
+    query: compactQuery({
+      productId: params.productId,
+    }),
+  })
+
+export const createUnitConversion = (
+  payload: { productId: string; fromUnitId: string; toUnitId: string; factor: number },
+  client: Pick<ProductInventoryApiClient, 'post'> = apiClient,
+) =>
+  client.post<UnitConversionDto>('/api/unitconversions', payload)
+
+export const deleteUnitConversion = (
+  id: string,
+  client: Pick<ProductInventoryApiClient, 'delete'> = apiClient,
+) =>
+  client.delete<boolean>(`/api/unitconversions/${id}`)
+
+export const getProductByBarcode = (
+  barcode: string,
+  client: Pick<ProductInventoryApiClient, 'get'> = apiClient,
+) =>
+  client.get<ProductDto>(`/api/products/barcode/${barcode}`)
+
+export const uploadProductImage = (
+  productId: string,
+  file: File,
+  client: { post: <T>(path: string, body?: unknown) => Promise<T> } = apiClient,
+) => {
+  const formData = new FormData()
+  formData.append('file', file)
+  return client.post<string>(`/api/products/${productId}/image`, formData)
+}
+
+export interface ProductPriceHistoryDto {
+  id: string
+  productId: string
+  oldImportPrice: number
+  newImportPrice: number
+  oldSellPrice: number
+  newSellPrice: number
+  changedBy: string
+  createdAt: string
+}
+
+export const getProductPriceHistory = (
+  productId: string,
+  client: Pick<ProductInventoryApiClient, 'get'> = apiClient,
+) =>
+  client.get<ProductPriceHistoryDto[]>(`/api/products/${productId}/price-history`)
+
+export interface GetInventoryBalanceReportParams {
+  startDate?: string
+  endDate?: string
+  search?: string
+}
+
+export interface InventoryBalanceReportDto {
+  productId: string
+  productCode: string
+  productName: string
+  unitName: string
+  openingStock: number
+  receivedQuantity: number
+  shippedQuantity: number
+  closingStock: number
+}
+
+export const getInventoryBalanceReport = (
+  params: GetInventoryBalanceReportParams = {},
+  client: Pick<ProductInventoryApiClient, 'get'> = apiClient,
+) =>
+  client.get<InventoryBalanceReportDto[]>('/api/inventory/balance-report', {
+    query: compactQuery({
+      startDate: params.startDate,
+      endDate: params.endDate,
+      search: params.search,
+    }),
+  })
+
+
+
+
+

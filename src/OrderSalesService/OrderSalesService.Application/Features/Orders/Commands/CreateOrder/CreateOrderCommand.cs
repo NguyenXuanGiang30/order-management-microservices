@@ -2,6 +2,12 @@ using MediatR;
 
 namespace OrderSalesService.Application.Features.Orders.Commands.CreateOrder;
 
+public record CreatePaymentTransactionDto(
+    string PaymentMethod,
+    decimal Amount,
+    string? Note = null
+);
+
 public record CreateOrderCommand(
     Guid CustomerId,
     string CustomerName,
@@ -10,7 +16,9 @@ public record CreateOrderCommand(
     string? PaymentMethod,
     string? PromotionCode,
     string? Note,
-    List<CreateOrderItemDto> Items
+    List<CreateOrderItemDto> Items,
+    string? Status = "Pending",
+    List<CreatePaymentTransactionDto>? Payments = null
 ) : IRequest<CreateOrderResponse>;
 
 public record CreateOrderItemDto(

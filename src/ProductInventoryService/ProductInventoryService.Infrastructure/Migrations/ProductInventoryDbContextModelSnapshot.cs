@@ -1211,6 +1211,48 @@ namespace ProductInventoryService.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ProductInventoryService.Application.Models.ProductPriceHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<decimal>("NewImportPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("NewSellPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OldImportPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("OldSellPrice")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProductId");
+
+                    b.ToTable("ProductPriceHistories", (string)null);
+                });
+
             modelBuilder.Entity("ProductInventoryService.Application.Models.StocktakeLine", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1393,6 +1435,46 @@ namespace ProductInventoryService.Infrastructure.Migrations
                         });
                 });
 
+            modelBuilder.Entity("ProductInventoryService.Application.Models.UnitConversion", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<decimal>("Factor")
+                        .HasColumnType("decimal(18,4)");
+
+                    b.Property<Guid>("FromUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("ProductId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("ToUnitId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FromUnitId");
+
+                    b.HasIndex("ToUnitId");
+
+                    b.HasIndex("ProductId", "FromUnitId", "ToUnitId")
+                        .IsUnique()
+                        .HasDatabaseName("IX_UnitConversions_Product_From_To");
+
+                    b.ToTable("UnitConversions", (string)null);
+                });
+
             modelBuilder.Entity("ProductInventoryService.Application.Models.Category", b =>
                 {
                     b.HasOne("ProductInventoryService.Application.Models.Category", "ParentCategory")
@@ -1463,6 +1545,17 @@ namespace ProductInventoryService.Infrastructure.Migrations
                     b.Navigation("Unit");
                 });
 
+            modelBuilder.Entity("ProductInventoryService.Application.Models.ProductPriceHistory", b =>
+                {
+                    b.HasOne("ProductInventoryService.Application.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Product");
+                });
+
             modelBuilder.Entity("ProductInventoryService.Application.Models.StocktakeLine", b =>
                 {
                     b.HasOne("ProductInventoryService.Application.Models.Product", "Product")
@@ -1480,6 +1573,33 @@ namespace ProductInventoryService.Infrastructure.Migrations
                     b.Navigation("Product");
 
                     b.Navigation("StocktakeSession");
+                });
+
+            modelBuilder.Entity("ProductInventoryService.Application.Models.UnitConversion", b =>
+                {
+                    b.HasOne("ProductInventoryService.Application.Models.Unit", "FromUnit")
+                        .WithMany()
+                        .HasForeignKey("FromUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ProductInventoryService.Application.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ProductInventoryService.Application.Models.Unit", "ToUnit")
+                        .WithMany()
+                        .HasForeignKey("ToUnitId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromUnit");
+
+                    b.Navigation("Product");
+
+                    b.Navigation("ToUnit");
                 });
 
             modelBuilder.Entity("ProductInventoryService.Application.Models.Category", b =>

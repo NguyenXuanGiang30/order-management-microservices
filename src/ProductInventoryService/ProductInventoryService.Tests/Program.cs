@@ -12,6 +12,7 @@ var tests = new List<(string Name, Action Test)>
     ("calculates negative stocktake adjustment", CalculatesNegativeStocktakeAdjustment),
     ("matches product search by barcode for receipt entry", MatchesProductSearchByBarcodeForReceiptEntry),
     ("calculates weighted average import price after goods receipt", CalculatesWeightedAverageImportPriceAfterGoodsReceipt),
+    ("formats inventory balance report CSV correctly", FormatsInventoryBalanceReportCsvCorrectly),
 };
 
 foreach (var test in tests)
@@ -126,6 +127,31 @@ static void CalculatesWeightedAverageImportPriceAfterGoodsReceipt()
         receiptUnitPrice: 3_600m);
 
     AssertEqual(3_200m, result, "weighted average import price");
+}
+
+static void FormatsInventoryBalanceReportCsvCorrectly()
+{
+    var reports = new List<ProductInventoryService.Application.DTOs.InventoryBalanceReportDto>
+    {
+        new()
+        {
+            ProductId = Guid.Parse("d3b07384-d113-4416-a517-e7d6363c4e33"),
+            ProductCode = "PROD-A",
+            ProductName = "Product A",
+            UnitName = "cai",
+            OpeningStock = 10,
+            ReceivedQuantity = 5,
+            ShippedQuantity = 3,
+            ClosingStock = 12
+        }
+    };
+
+    var csv = InventoryCsvService.ToBalanceReportCsv(reports);
+    var lines = csv.Split(new[] { "\r\n", "\r", "\n" }, StringSplitOptions.RemoveEmptyEntries);
+
+    AssertEqual(2, lines.Length, "csv lines length");
+    AssertEqual("ProductId,ProductCode,ProductName,UnitName,OpeningStock,ReceivedQuantity,ShippedQuantity,ClosingStock", lines[0], "csv header");
+    AssertEqual("d3b07384-d113-4416-a517-e7d6363c4e33,PROD-A,Product A,cai,10,5,3,12", lines[1], "csv row content");
 }
 
 static void AssertEqual<T>(T expected, T actual, string name)

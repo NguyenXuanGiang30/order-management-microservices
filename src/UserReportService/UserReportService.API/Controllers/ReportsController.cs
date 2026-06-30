@@ -36,10 +36,16 @@ public class ReportsController : ControllerBase
         var last7Days = await _context.DailySalesSummaries.AsNoTracking().Where(d => d.ReportDate >= today.AddDays(-7)).OrderByDescending(d => d.ReportDate).ToListAsync();
         var currentMonth = await _context.MonthlySalesSummaries.AsNoTracking().FirstOrDefaultAsync(m => m.Year == today.Year && m.Month == today.Month);
 
+        var lastMonthDate = today.AddMonths(-1);
+        var previousMonth = await _context.MonthlySalesSummaries.AsNoTracking().FirstOrDefaultAsync(m => m.Year == lastMonthDate.Year && m.Month == lastMonthDate.Month);
+        var last14Days = await _context.DailySalesSummaries.AsNoTracking().Where(d => d.ReportDate >= today.AddDays(-14)).OrderByDescending(d => d.ReportDate).ToListAsync();
+
         var dashboard = new DashboardDto(
             _mapper.Map<DailySalesSummaryDto>(todaySummary),
             _mapper.Map<List<DailySalesSummaryDto>>(last7Days),
-            _mapper.Map<MonthlySalesSummaryDto>(currentMonth));
+            _mapper.Map<MonthlySalesSummaryDto>(currentMonth),
+            _mapper.Map<MonthlySalesSummaryDto>(previousMonth),
+            _mapper.Map<List<DailySalesSummaryDto>>(last14Days));
 
         return Ok(ApiResponse<DashboardDto>.SuccessResponse(dashboard));
     }
